@@ -6,7 +6,7 @@
   "scripts": {
     "start": "tsx src/app.ts",
     "start:dev": "tsx watch src/index.ts",
-    "test": "vitest",
+    "test": "vitest run",
     "coverage": "vitest run --coverage",
     "lint": "npx eslint src/**/*.ts",
     "pretty": "prettier --write 'src/**/*.ts'",

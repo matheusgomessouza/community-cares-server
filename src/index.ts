@@ -1,16 +1,14 @@
+import "dotenv/config";
 import express from "express";
 import bodyParser from "body-parser";
-
-import "dotenv/config";
 import { ExchangeCode } from "@controllers/authentication-controller";
 
 const app = express();
 const port = 8080;
-
 const exchangeCodeController = new ExchangeCode();
 
+app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
 
 app.get("/", (req, res) => {
 	res.send("Server is running");
@@ -21,12 +19,10 @@ app.post("/authenticate", async (req, res) => {
 
 	try {
 		const response = await exchangeCodeController.exchangeCode(code);
-		const accessToken = response?.data.access_token;
-
-		res.json({ access_token: accessToken });
+		res.status(200).json({ access_token: response?.data });
 	} catch (error: unknown) {
 		console.error("Error exchanging code for token:", error);
-		res.status(500).json({ error: "Internal Server Error" });
+		res.status(500).json({ error });
 	}
 });
 

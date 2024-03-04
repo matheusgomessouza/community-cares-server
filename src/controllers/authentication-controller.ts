@@ -4,10 +4,12 @@ export class ExchangeCode {
 	async exchangeCode(code: string) {
 		try {
 			const response = await axios.post(
-				`https://github.com/login/oauth/access_token?client_id=${process.env.GITHUB_CLIENT_ID}&client_secret=${process.env.GITHUB_CLIENT_SECRET}&code=${code}`,
+				`https://github.com/login/oauth/access_token?client_id=${process.env.GITHUB_CLIENT_ID}&client_secret=${process.env.GITHUB_CLIENT_SECRET}&code=${String(code)}`,
+				{},
 				{
 					headers: {
 						Accept: "application/json",
+						"Content-Type": "application/json",
 					},
 				},
 			);

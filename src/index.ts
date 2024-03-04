@@ -2,10 +2,10 @@ import "dotenv/config";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
+import serverless from "serverless-http";
 import { ExchangeCode } from "@controllers/authentication-controller";
 
 const app = express();
-const port = 8080;
 const exchangeCodeController = new ExchangeCode();
 
 app.use(bodyParser.json());
@@ -27,6 +27,4 @@ app.post("/authenticate", async (req, res) => {
 	}
 });
 
-app.listen(port, () => {
-	console.log(`Server listening to port ${port}`);
-});
+export const handler = serverless(app);

@@ -4,12 +4,12 @@
   "description": "Server for the Community Cares application",
   "main": "index.ts",
   "scripts": {
-    "start": "tsx src/index.ts",
-    "start:dev": "tsx watch src/index.ts",
+    "start": "tsx api/index.ts",
+    "start:dev": "tsx watch api/index.ts",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "lint": "npx eslint src/**/*.ts",
-    "pretty": "prettier --write 'src/**/*.ts'",
+    "lint": "npx eslint api/**/*.ts",
+    "pretty": "prettier --write 'api/**/*.ts'",
     "prepare": "husky"
   },
   "author": "Matheus Souza",

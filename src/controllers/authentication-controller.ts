@@ -9,7 +9,7 @@ export class ExchangeCode {
 					client_id: process.env.GITHUB_CLIENT_ID,
 					client_secret: process.env.GITHUB_CLIENT_SECRET,
 					code: code,
-					redirect_uri:"exp://192.168.15.147:8081",
+					redirect_uri: process.env.LOCAL_EXPO_IP,
 				},
 				{
 					headers: {

@@ -11,6 +11,7 @@ Esse projeto foi desenvolvido com as seguintes tecnologias / This project was de
 - [Vitest](https://vitest.dev/)
 - [Husky](https://typicode.github.io/husky/)
 - [Axios](https://axios-http.com/)
+- [Prisma ORM](https://axios-http.com/)
 
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

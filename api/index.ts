@@ -1,9 +1,11 @@
 import "dotenv/config";
-import express from "express";
-import bodyParser from "body-parser";
 import cors from "cors";
 import axios from "axios";
+import express from "express";
+import bodyParser from "body-parser";
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 const app = express();
 const port = 8080;
 
@@ -45,6 +47,16 @@ app.post("/authenticate", async (req, res) => {
 		res.status(200).json(response?.data);
 	} catch (error: unknown) {
 		console.error("Error exchanging code for token:", error);
+		res.status(500).json({ error });
+	}
+});
+
+app.get("/locations", async (req, res) => {
+	try {
+		const locations = await prisma.locations.findMany();
+		res.status(200).json(locations);
+	} catch (error) {
+		console.error("Error on trying retrieving locations:", error);
 		res.status(500).json({ error });
 	}
 });

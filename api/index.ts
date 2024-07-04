@@ -1,36 +1,14 @@
 import "dotenv/config";
 import cors from "cors";
-import axios from "axios";
-import express from "express";
+import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import { PrismaClient } from "@prisma/client";
+import { exchangeCode } from "./lib/github-exchange-code.js";
+import { validateGithubToken } from "./middleware/token-validation.js";
 
 const prisma = new PrismaClient();
 const app = express();
 const port = 8080;
-
-async function exchangeCode(code: string) {
-	try {
-		const response = await axios.post(
-			`https://github.com/login/oauth/access_token`,
-			{
-				client_id: process.env.GITHUB_CLIENT_ID,
-				client_secret: process.env.GITHUB_CLIENT_SECRET,
-				code: code,
-				redirect_uri: process.env.LOCAL_EXPO_IP,
-			},
-			{
-				headers: {
-					Accept: "application/json",
-					"Content-Type": "application/json",
-				},
-			},
-		);
-		return response;
-	} catch (error) {
-		console.error("Error on the HTTP request", error);
-	}
-}
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -39,12 +17,17 @@ app.get("/", (req, res) => {
 	res.send("Server is running");
 });
 
-app.post("/authenticate", async (req, res) => {
-	const { code } = req.body;
+app.get("/authenticate", async (req: Request, res: Response) => {
+	const code = req.params["code"];
+	const state = req.params["state"];
 
 	try {
-		const response = await exchangeCode(code);
+		const response = await exchangeCode(code, state);
 		res.status(200).json(response?.data);
+
+		if (state === "web-app") {
+			res.redirect(process.env.WEB ? process.env.WEB : "");
+		}
 	} catch (error: unknown) {
 		console.error("Error exchanging code for token:", error);
 		res.status(500).json({ error });
@@ -58,6 +41,43 @@ app.get("/locations", async (req, res) => {
 	} catch (error) {
 		console.error("Error on trying retrieving locations:", error);
 		res.status(500).json({ error });
+	}
+});
+
+app.post("/location", async (req, res) => {
+	const { name, type, address, contact, coords } = req.body;
+
+	if (
+		!req.headers.authorization ||
+		!req.headers.authorization.startsWith("Bearer ")
+	) {
+		return res.status(401).json({ message: "Unauthorized" });
+	}
+
+	const access_token = req.headers.authorization.split(" ")[1];
+
+	const tokenValidity = await validateGithubToken(access_token);
+
+	if (tokenValidity === 200) {
+		try {
+			await prisma.locations.create({
+				data: {
+					name,
+					type,
+					address,
+					contact,
+					coords,
+				},
+			});
+			res.status(200).json({ message: "Location successfully created!" });
+		} catch (error) {
+			console.error("Error on trying creating a location:", error);
+			res.status(500).json({ error });
+		}
+	} else {
+		res.json({
+			message: "Unable to perform query | Token expired",
+		});
 	}
 });
 

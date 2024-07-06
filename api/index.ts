@@ -3,7 +3,7 @@ import cors from "cors";
 import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import { PrismaClient } from "@prisma/client";
-import { exchangeCode } from "./lib/github-exchange-code.js";
+import { exchangeCode } from "./lib/github.js";
 import { validateGithubToken } from "./middleware/token-validation.js";
 
 const prisma = new PrismaClient();
@@ -17,20 +17,15 @@ app.get("/", (req, res) => {
 	res.send("Server is running");
 });
 
-app.get("/authenticate", async (req: Request, res: Response) => {
-	const code = req.params["code"];
-	const state = req.params["state"];
+app.post("/authenticate", async (req: Request, res: Response) => {
+	const { code, env } = req.body;
 
 	try {
-		const response = await exchangeCode(code, state);
+		const response = await exchangeCode(code, env);
 		res.status(200).json(response?.data);
-
-		if (state === "web-app") {
-			res.redirect(process.env.WEB ? process.env.WEB : "");
-		}
 	} catch (error: unknown) {
 		console.error("Error exchanging code for token:", error);
-		res.status(500).json({ error });
+		res.status(500).json({ message: error });
 	}
 });
 

@@ -6,7 +6,7 @@
 	"main": "index.ts",
 	"scripts": {
 		"start": "tsx api/index.ts",
-		"start:dev": "tsx watch api/index.ts dotenv -e .env.local",
+		"start:dev": "tsx watch api/index.ts dotenv -e .env",
 		"migrate": "npx prisma migrate deploy",
 		"test": "vitest run",
 		"coverage": "vitest run --coverage",

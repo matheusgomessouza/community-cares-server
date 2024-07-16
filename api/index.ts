@@ -22,7 +22,9 @@ app.post("/authenticate", async (req: Request, res: Response) => {
 
 	try {
 		const response = await exchangeCode(code, env);
-		res.status(200).json(response?.data);
+		if (response?.status === 200) {
+			res.status(200).json(response?.data);
+		}
 	} catch (error: unknown) {
 		console.error("Error exchanging code for token:", error);
 		res.status(500).json({ message: error });
@@ -70,7 +72,7 @@ app.post("/location", async (req, res) => {
 			res.status(500).json({ error });
 		}
 	} else {
-		res.json({
+		res.status(401).json({
 			message: "Unable to perform query | Token expired",
 		});
 	}

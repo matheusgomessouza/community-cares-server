@@ -23,8 +23,9 @@ export async function exchangeCode(code: string, env: string) {
 
 	try {
 		const response = await axios.request(options);
-		return response;
+
+		if (response.status === 200) return response;
 	} catch (error) {
-		console.error("Error on the HTTP request |", error);
+		console.error("Error on the HTTP request", error);
 	}
 }

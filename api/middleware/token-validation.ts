@@ -1,5 +1,3 @@
-import axios from "axios";
-
 export async function validateGithubToken(token: string) {
 	// Encode the credentials in base64
 	const credentials = Buffer.from(
@@ -8,7 +6,6 @@ export async function validateGithubToken(token: string) {
 
 	const options = {
 		method: "POST",
-		url: `https://api.github.com/applications/${process.env.GITHUB_CLIENT_ID_WEB}/token`,
 		headers: {
 			Accept: "application/vnd.github+json",
 			"X-GitHub-Api-Version": "2022-11-28",
@@ -18,7 +15,10 @@ export async function validateGithubToken(token: string) {
 	};
 
 	try {
-		const response = await axios.request(options);
+		const response = await fetch(
+			`https://api.github.com/applications/${process.env.GITHUB_CLIENT_ID_WEB}/token`,
+			options,
+		);
 
 		return response.status;
 	} catch (error) {

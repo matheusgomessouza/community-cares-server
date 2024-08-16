@@ -23,3 +23,22 @@ model Locations {
 
   @@unique([id, name, address, coords])
 }
+
+model PendingLocations {
+  id      Int    @id @default(autoincrement())
+  name    String
+  type    String
+  address String
+  contact String
+  coords  Json
+
+  @@unique([id, name, address, coords])
+}
+
+model AdminUser {
+  id Int @id @default(autoincrement())
+  name String
+  username String @unique
+  email String
+  password String
+}

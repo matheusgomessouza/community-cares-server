@@ -3,6 +3,8 @@ import cors from "cors";
 import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import { PrismaClient } from "@prisma/client";
+import argon2 from "argon2";
+
 import { exchangeCode } from "./lib/github.js";
 import { validateGithubToken } from "./middleware/token-validation.js";
 
@@ -22,26 +24,34 @@ app.post("/authenticate", async (req: Request, res: Response) => {
 
 	try {
 		const response = await exchangeCode(code, env);
-		if (response?.status === 200) {
-			res.status(200).json(response?.data);
-		}
+		res.status(200).json(response);
 	} catch (error: unknown) {
 		console.error("Error exchanging code for token:", error);
 		res.status(500).json({ message: error });
 	}
 });
 
-app.get("/locations", async (req, res) => {
+app.get("/locations", async (req: Request, res: Response) => {
 	try {
 		const locations = await prisma.locations.findMany();
 		res.status(200).json(locations);
 	} catch (error) {
-		console.error("Error on trying retrieving locations:", error);
-		res.status(500).json({ error });
+		console.error("Error on trying to retrieve locations:", error);
+		res.status(500).json({ message: error });
 	}
 });
 
-app.post("/location", async (req, res) => {
+app.get("/pending-locations", async (req: Request, res: Response) => {
+	try {
+		const pendingLocations = await prisma.pendingLocations.findMany();
+		res.status(200).json(pendingLocations);
+	} catch (error) {
+		console.error("Error on trying to retrieve pendingLocations:", error);
+		res.status(500).json({ message: error });
+	}
+});
+
+app.post("/pending-location", async (req: Request, res: Response) => {
 	const { name, type, address, contact, coords } = req.body;
 
 	if (
@@ -57,7 +67,7 @@ app.post("/location", async (req, res) => {
 
 	if (tokenValidity === 200) {
 		try {
-			await prisma.locations.create({
+			await prisma.pendingLocations.create({
 				data: {
 					name,
 					type,
@@ -69,7 +79,7 @@ app.post("/location", async (req, res) => {
 			res.status(200).json({ message: "Location successfully created!" });
 		} catch (error) {
 			console.error("Error on trying creating a location:", error);
-			res.status(500).json({ error });
+			res.status(500).json({ message: error });
 		}
 	} else {
 		res.status(401).json({
@@ -78,6 +88,27 @@ app.post("/location", async (req, res) => {
 	}
 });
 
+app.post("/admin-user", async (req: Request, res: Response) => {
+	const { name, username, email, password } = req.body;
+
+	try {
+		const hashedPassword = await argon2.hash(password);
+
+		await prisma.adminUser.create({
+			data: {
+				name,
+				username,
+				email,
+				password: hashedPassword,
+			},
+		});
+		res.status(200).json({ message: "AdminUser successfully created!" });
+	} catch (error) {
+		console.error("Unable to register new admin user", error);
+		res.status(500).json({ error });
+	}
+});
+
 app.listen(port, () => {
-	console.log(`Server is running`);
+	console.log(`Server is running on port:`, port);
 });

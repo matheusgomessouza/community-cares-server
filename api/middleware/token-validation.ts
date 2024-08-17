@@ -1,3 +1,5 @@
+import fetch from "node-fetch";
+
 export async function validateGithubToken(token: string) {
 	// Encode the credentials in base64
 	const credentials = Buffer.from(
@@ -11,7 +13,7 @@ export async function validateGithubToken(token: string) {
 			"X-GitHub-Api-Version": "2022-11-28",
 			Authorization: `Basic ${credentials}`,
 		},
-		data: { access_token: `${String(token)}` },
+		body: JSON.stringify({ access_token: `${String(token)}` }),
 	};
 
 	try {
@@ -19,7 +21,6 @@ export async function validateGithubToken(token: string) {
 			`https://api.github.com/applications/${process.env.GITHUB_CLIENT_ID_WEB}/token`,
 			options,
 		);
-
 		return response.status;
 	} catch (error) {
 		console.error("Token expired /validateGithubToken", error);

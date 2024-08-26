@@ -143,7 +143,7 @@ app.post("/admin-user", async (req: Request, res: Response) => {
 				password: hashedPassword,
 			},
 		});
-		res.status(200).json({ message: "AdminUser successfully created!" });
+		res.status(204).json({ message: "AdminUser successfully created!" });
 	} catch (error) {
 		console.error("Unable to register new admin user", error);
 		res.status(500).json({ error });

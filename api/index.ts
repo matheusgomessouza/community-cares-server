@@ -4,6 +4,7 @@ import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import { PrismaClient } from "@prisma/client";
 import argon2 from "argon2";
+import * as jose from "jose";
 
 import { exchangeCode } from "./lib/github.js";
 import { validateGithubToken } from "./middleware/token-validation.js";
@@ -28,6 +29,46 @@ app.post("/authenticate", async (req: Request, res: Response) => {
 	} catch (error: unknown) {
 		console.error("Error exchanging code for token:", error);
 		res.status(500).json({ message: error });
+	}
+});
+
+app.post("/authenticate-admin", async (req: Request, res: Response) => {
+	const { username, password } = req.body;
+
+	try {
+		const user = await prisma.adminUser.findUnique({
+			where: {
+				username: username,
+			},
+		});
+
+		const passwordMatch =
+			user && (await argon2.verify(user?.password, password));
+
+		if (passwordMatch) {
+			const secret = new TextEncoder().encode(
+				process.env.AUTH_SECRET_KEY,
+			);
+			const jwtConfig = new jose.SignJWT()
+				.setProtectedHeader({
+					alg: "HS256",
+				})
+				.sign(secret);
+
+			const jwtToken = (await jwtConfig).toString();
+
+			res.status(200).json({
+				message: "Authentication successfully done.",
+				token: jwtToken,
+			});
+		} else {
+			res.status(401).json({ message: "Incorrect password." });
+		}
+	} catch (error) {
+		console.error("Unable to perform authentication", error);
+		res.send(500).json({
+			message: "Unable to authenticate, please try again.",
+		});
 	}
 });
 
@@ -102,7 +143,7 @@ app.post("/admin-user", async (req: Request, res: Response) => {
 				password: hashedPassword,
 			},
 		});
-		res.status(200).json({ message: "AdminUser successfully created!" });
+		res.status(204).json({ message: "AdminUser successfully created!" });
 	} catch (error) {
 		console.error("Unable to register new admin user", error);
 		res.status(500).json({ error });

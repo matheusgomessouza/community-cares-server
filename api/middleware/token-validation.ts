@@ -1,4 +1,5 @@
 import fetch from "node-fetch";
+import { OAuth2Client } from "google-auth-library";
 
 export async function validateGithubToken(token: string) {
 	// Encode the credentials in base64
@@ -25,4 +26,15 @@ export async function validateGithubToken(token: string) {
 	} catch (error) {
 		console.error("Token expired /validateGithubToken", error);
 	}
+}
+
+export async function validateGoogleToken(token: string) {
+	console.log(token);
+	const client = new OAuth2Client();
+	const ticket = await client.verifyIdToken({
+		idToken: token,
+		audience: process.env.GOOGLE_CLIENT_ID,
+	});
+	const payload = ticket.getPayload();
+	console.log("Google payload", payload);
 }

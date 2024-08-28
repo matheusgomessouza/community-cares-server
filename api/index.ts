@@ -7,7 +7,10 @@ import argon2 from "argon2";
 import * as jose from "jose";
 
 import { exchangeCode } from "./lib/github.js";
-import { validateGithubToken } from "./middleware/token-validation.js";
+import {
+	validateGithubToken,
+	validateGoogleToken,
+} from "./middleware/token-validation.js";
 
 const prisma = new PrismaClient();
 const app = express();
@@ -93,7 +96,7 @@ app.get("/pending-locations", async (req: Request, res: Response) => {
 });
 
 app.post("/pending-location", async (req: Request, res: Response) => {
-	const { name, type, address, contact, coords } = req.body;
+	const { name, type, address, contact, coords, provider } = req.body;
 
 	if (
 		!req.headers.authorization ||
@@ -104,7 +107,10 @@ app.post("/pending-location", async (req: Request, res: Response) => {
 
 	const access_token = req.headers.authorization.split(" ")[1];
 
-	const tokenValidity = await validateGithubToken(access_token);
+	const tokenValidity =
+		provider === "github"
+			? await validateGithubToken(access_token)
+			: await validateGoogleToken(access_token);
 
 	if (tokenValidity === 200) {
 		try {

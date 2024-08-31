@@ -11,6 +11,7 @@ import {
 	validateGithubToken,
 	validateGoogleToken,
 } from "./middleware/token-validation.js";
+import { exchangeCodeGoogle } from "./lib/google.js";
 
 const prisma = new PrismaClient();
 const app = express();
@@ -75,6 +76,18 @@ app.post("/authenticate-admin", async (req: Request, res: Response) => {
 	}
 });
 
+app.post("/authenticate-google", async (req: Request, res: Response) => {
+	const { code } = req.body;
+
+	try {
+		const response = await exchangeCodeGoogle(code);
+		res.status(200).json(response);
+	} catch (error) {
+		console.error("Error exchanging code for token:", error);
+		res.status(500).json({ message: error });
+	}
+});
+
 app.get("/locations", async (req: Request, res: Response) => {
 	try {
 		const locations = await prisma.locations.findMany();
@@ -111,7 +124,7 @@ app.post("/pending-location", async (req: Request, res: Response) => {
 		provider === "github"
 			? await validateGithubToken(access_token)
 			: await validateGoogleToken(access_token);
-
+	console.log("token", tokenValidity);
 	if (tokenValidity === 200) {
 		try {
 			await prisma.pendingLocations.create({

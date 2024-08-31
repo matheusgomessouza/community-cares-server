@@ -29,12 +29,24 @@ export async function validateGithubToken(token: string) {
 }
 
 export async function validateGoogleToken(token: string) {
-	console.log(token);
-	const client = new OAuth2Client();
-	const ticket = await client.verifyIdToken({
-		idToken: token,
-		audience: process.env.GOOGLE_CLIENT_ID,
-	});
-	const payload = ticket.getPayload();
-	console.log("Google payload", payload);
+	const expiredToken = 401;
+	const notExpiredToken = 200;
+
+	try {
+		const client = new OAuth2Client();
+		const response = await client.getTokenInfo(token);
+
+		const { expiry_date } = response;
+
+		if (expiry_date !== 0) {
+			return notExpiredToken;
+		} else {
+			return expiredToken;
+		}
+	} catch (error) {
+		console.error(
+			"Unable to perform token validation /validateGoogleToken",
+			error,
+		);
+	}
 }

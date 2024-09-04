@@ -6,11 +6,11 @@ import { PrismaClient } from "@prisma/client";
 import argon2 from "argon2";
 import * as jose from "jose";
 
-import { exchangeCode } from "./lib/github.js";
 import {
 	validateGithubToken,
 	validateGoogleToken,
 } from "./middleware/token-validation.js";
+import { exchangeCode } from "./lib/github.js";
 import { exchangeCodeGoogle } from "./lib/google.js";
 
 const prisma = new PrismaClient();
@@ -136,7 +136,9 @@ app.post("/pending-location", async (req: Request, res: Response) => {
 					coords,
 				},
 			});
-			res.status(200).json({ message: "Location successfully created!" });
+			res.status(200).json({
+				message: "Pending Location successfully created!",
+			});
 		} catch (error) {
 			console.error("Error on trying creating a location:", error);
 			res.status(500).json({ message: error });
@@ -144,6 +146,52 @@ app.post("/pending-location", async (req: Request, res: Response) => {
 	} else {
 		res.status(401).json({
 			message: "Unable to perform query | Token expired",
+		});
+	}
+});
+
+app.delete("/pending-location/:id", async (req: Request, res: Response) => {
+	const id = req.params.id;
+
+	try {
+		await prisma.pendingLocations.delete({
+			where: {
+				id: Number(id),
+			},
+		});
+		res.status(200).json({
+			message: "Pending Location successfully deleted!",
+		});
+	} catch (error) {
+		console.error("Error on trying deleting a pending location:", error);
+		res.status(500).json({ message: error });
+	}
+});
+
+app.post("/locations", async (req: Request, res: Response) => {
+	const { id, name, type, address, contact, coords } = req.body;
+
+	try {
+		await prisma.locations.create({
+			data: {
+				name,
+				type,
+				address,
+				contact,
+				coords,
+			},
+		});
+
+		await prisma.pendingLocations.delete({
+			where: {
+				id: Number(id),
+			},
+		});
+		res.status(201).json({ message: "Location successfully created!" });
+	} catch (error) {
+		res.status(500).json({
+			message: "Error on trying creating a location",
+			messageError: error,
 		});
 	}
 });
@@ -162,7 +210,7 @@ app.post("/admin-user", async (req: Request, res: Response) => {
 				password: hashedPassword,
 			},
 		});
-		res.status(204).json({ message: "AdminUser successfully created!" });
+		res.status(201).json({ message: "AdminUser successfully created!" });
 	} catch (error) {
 		console.error("Unable to register new admin user", error);
 		res.status(500).json({ error });

@@ -4,7 +4,7 @@ export async function exchangeCodeGoogle(code: string) {
 	const client = new OAuth2Client(
 		process.env.GOOGLE_CLIENT_ID,
 		process.env.GOOGLE_SECRET,
-		process.env.LOCAL_WEB,
+		process.env.GOOGLE_REDIRECT_URI,
 	);
 
 	try {

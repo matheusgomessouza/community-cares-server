@@ -57,6 +57,7 @@ app.post("/authenticate-admin", async (req: Request, res: Response) => {
 				.setProtectedHeader({
 					alg: "HS256",
 				})
+				.setExpirationTime("2h")
 				.sign(secret);
 
 			const jwtToken = (await jwtConfig).toString();
@@ -124,7 +125,7 @@ app.post("/pending-location", async (req: Request, res: Response) => {
 		provider === "github"
 			? await validateGithubToken(access_token)
 			: await validateGoogleToken(access_token);
-	console.log("token", tokenValidity);
+
 	if (tokenValidity === 200) {
 		try {
 			await prisma.pendingLocations.create({
@@ -153,7 +154,22 @@ app.post("/pending-location", async (req: Request, res: Response) => {
 app.delete("/pending-location/:id", async (req: Request, res: Response) => {
 	const id = req.params.id;
 
+	if (
+		!req.headers.authorization ||
+		!req.headers.authorization.startsWith("Bearer ")
+	) {
+		return res.status(401).json({ message: "Unauthorized" });
+	}
+
+	const access_token = req.headers.authorization.split(" ")[1];
+
+	const secret = new TextEncoder().encode(process.env.AUTH_SECRET_KEY);
+
 	try {
+		await jose.jwtVerify(access_token, secret, {
+			algorithms: ["HS256"],
+		});
+
 		await prisma.pendingLocations.delete({
 			where: {
 				id: Number(id),
@@ -163,15 +179,41 @@ app.delete("/pending-location/:id", async (req: Request, res: Response) => {
 			message: "Pending Location successfully deleted!",
 		});
 	} catch (error) {
-		console.error("Error on trying deleting a pending location:", error);
-		res.status(500).json({ message: error });
+		if (error instanceof jose.errors.JWTExpired) {
+			console.error(
+				"Error on trying deleting a pending location | JWT is expired",
+				error,
+			);
+			res.status(500).json({ message: error });
+		} else {
+			console.error(
+				"Error on trying deleting a pending location | JWT verification failed:",
+				error,
+			);
+			res.status(500).json({ message: error });
+		}
 	}
 });
 
 app.post("/locations", async (req: Request, res: Response) => {
 	const { id, name, type, address, contact, coords } = req.body;
 
+	if (
+		!req.headers.authorization ||
+		!req.headers.authorization.startsWith("Bearer ")
+	) {
+		return res.status(401).json({ message: "Unauthorized" });
+	}
+
+	const access_token = req.headers.authorization.split(" ")[1];
+
+	const secret = new TextEncoder().encode(process.env.AUTH_SECRET_KEY);
+
 	try {
+		await jose.jwtVerify(access_token, secret, {
+			algorithms: ["HS256"],
+		});
+
 		await prisma.locations.create({
 			data: {
 				name,

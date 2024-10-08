@@ -259,6 +259,30 @@ app.post("/admin-user", async (req: Request, res: Response) => {
 	}
 });
 
+app.patch("/locations", async (req: Request, res: Response) => {
+	const { field } = req.body;
+
+	try {
+		await prisma.locations.update({
+			where: {
+				id: Number(field.id),
+			},
+			data: {
+				contact: field.contact,
+			},
+		});
+
+		res.status(200).json({
+			message: "Location information successfully updated!",
+		});
+	} catch (error) {
+		res.status(500).json({
+			message: "Error on trying updating location data",
+			messageError: error,
+		});
+	}
+});
+
 app.listen(port, () => {
 	console.log(`Server is running on port:`, port);
 });

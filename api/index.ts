@@ -262,13 +262,28 @@ app.post("/admin-user", async (req: Request, res: Response) => {
 app.patch("/locations", async (req: Request, res: Response) => {
 	const { field } = req.body;
 
+	if (
+		!req.headers.authorization ||
+		!req.headers.authorization.startsWith("Bearer ")
+	) {
+		return res.status(401).json({ message: "Unauthorized" });
+	}
+
+	const access_token = req.headers.authorization.split(" ")[1];
+
+	const secret = new TextEncoder().encode(process.env.AUTH_SECRET_KEY);
+
 	try {
+		await jose.jwtVerify(access_token, secret, {
+			algorithms: ["HS256"],
+		});
+
 		await prisma.locations.update({
 			where: {
 				id: Number(field.id),
 			},
 			data: {
-				contact: field.contact,
+				[field.type]: field.info,
 			},
 		});
 

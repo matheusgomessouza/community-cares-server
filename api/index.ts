@@ -71,7 +71,7 @@ app.post("/authenticate-admin", async (req: Request, res: Response) => {
 		}
 	} catch (error) {
 		console.error("Unable to perform authentication", error);
-		res.send(500).json({
+		res.sendStatus(500).json({
 			message: "Unable to authenticate, please try again.",
 		});
 	}
@@ -298,6 +298,6 @@ app.patch("/locations", async (req: Request, res: Response) => {
 	}
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
 	console.log(`Server is running on port:`, port);
 });

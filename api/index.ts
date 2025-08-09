@@ -191,7 +191,9 @@ app.post("/authenticate", async (req: Request, res: Response) => {
 		res.status(200).json(response);
 	} catch (error: unknown) {
 		console.error("Error exchanging code for token:", error);
-		res.status(500).json({ message: error instanceof Error ? error.message : String(error) });
+		res.status(500).json({
+			message: error instanceof Error ? error.message : String(error),
+		});
 	}
 });
 
@@ -350,7 +352,9 @@ app.get("/pending-locations", async (req: Request, res: Response) => {
 		res.status(200).json(pendingLocations);
 	} catch (error) {
 		console.error("Error on trying to retrieve pendingLocations:", error);
-		res.status(500).json({ message: error instanceof Error ? error.message : error });
+		res.status(500).json({
+			message: error instanceof Error ? error.message : error,
+		});
 	}
 });
 
@@ -414,7 +418,9 @@ app.post("/pending-location", async (req: Request, res: Response) => {
 			});
 		} catch (error) {
 			console.error("Error on trying creating a location:", error);
-			res.status(500).json({ message: error instanceof Error ? error.message : String(error) });
+			res.status(500).json({
+				message: error instanceof Error ? error.message : String(error),
+			});
 		}
 	} else {
 		res.status(401).json({
@@ -476,19 +482,15 @@ app.delete("/pending-location/:id", async (req: Request, res: Response) => {
 				"Error on trying deleting a pending location | JWT is expired",
 				error,
 			);
-			res.status(500).json({ message: error });
-		} else {
-			console.error(
-				"Error on trying deleting a pending location | JWT verification failed:",
-				error,
-			);
 			res.status(500).json({ message: error.message || String(error) });
 		} else {
 			console.error(
-				"Error on trying deleting a pending location | JWT verification failed:",
+				"Error on trying deleting a pending location | JWT verification failed or delete error:",
 				error,
 			);
-			res.status(500).json({ message: error.message || String(error) });
+			return res.status(500).json({
+				message: error instanceof Error ? error.message : String(error),
+			});
 		}
 	}
 });
@@ -591,7 +593,9 @@ app.post("/admin-user", async (req: Request, res: Response) => {
 		res.status(201).json({ message: "AdminUser successfully created!" });
 	} catch (error) {
 		console.error("Unable to register new admin user", error);
-		res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+		res.status(500).json({
+			error: error instanceof Error ? error.message : String(error),
+		});
 	}
 });
 

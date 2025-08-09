@@ -342,6 +342,7 @@ describe("DELETE /pending-location/:id", () => {
 			where: { id: 10 },
 		});
 	});
+
 	it("returns 500 when JWT is expired", async () => {
 		jwtVerifySpy.mockRejectedValue(
 			new jose.errors.JWTExpired("expired", {} as JWTPayload),
@@ -364,6 +365,7 @@ describe("DELETE /pending-location/:id", () => {
 
 		expect(res.status).toBe(500);
 	});
+
 	it("returns 500 when delete throws", async () => {
 		jwtVerifySpy.mockResolvedValue({
 			payload: {},

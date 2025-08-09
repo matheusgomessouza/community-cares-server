@@ -414,7 +414,7 @@ app.post("/pending-location", async (req: Request, res: Response) => {
 			});
 		} catch (error) {
 			console.error("Error on trying creating a location:", error);
-			res.status(500).json({ message: error });
+			res.status(500).json({ message: error instanceof Error ? error.message : String(error) });
 		}
 	} else {
 		res.status(401).json({

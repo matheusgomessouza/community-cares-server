@@ -191,7 +191,7 @@ app.post("/authenticate", async (req: Request, res: Response) => {
 		res.status(200).json(response);
 	} catch (error: unknown) {
 		console.error("Error exchanging code for token:", error);
-		res.status(500).json({ message: error });
+		res.status(500).json({ message: error instanceof Error ? error.message : String(error) });
 	}
 });
 

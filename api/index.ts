@@ -585,7 +585,7 @@ app.post("/admin-user", async (req: Request, res: Response) => {
 		res.status(201).json({ message: "AdminUser successfully created!" });
 	} catch (error) {
 		console.error("Unable to register new admin user", error);
-		res.status(500).json({ error });
+		res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
 	}
 });
 

@@ -38,7 +38,7 @@ export async function validateGoogleToken(token: string) {
 
 		const { expiry_date } = response;
 
-		if (expiry_date !== 0) {
+		if (expiry_date !== 0 && Date.now() < expiry_date) {
 			return notExpiredToken;
 		} else {
 			return expiredToken;

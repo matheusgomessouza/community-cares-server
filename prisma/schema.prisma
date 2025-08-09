@@ -22,7 +22,7 @@ model Locations {
   contact String
   coords  Json
 
-  @@unique([id, name, address, coords])
+  @@unique([name, address, coords])
 }
 
 model PendingLocations {
@@ -33,7 +33,7 @@ model PendingLocations {
   contact String
   coords  Json
 
-  @@unique([id, name, address, coords])
+  @@unique([name, address, coords])
 }
 
 model AdminUser {

@@ -371,7 +371,6 @@ describe("DELETE /pending-location/:id", () => {
 			key: new Uint8Array(),
 		});
 		hoisted.pendingDelete.mockRejectedValue(new Error("db error"));
-		hoisted.pendingDelete.mockRejectedValue(new Error("db error"));
 
 		const res = await request(app)
 			.delete("/pending-location/10")

@@ -482,7 +482,13 @@ app.delete("/pending-location/:id", async (req: Request, res: Response) => {
 				"Error on trying deleting a pending location | JWT verification failed:",
 				error,
 			);
-			res.status(500).json({ message: error });
+			res.status(500).json({ message: error.message || String(error) });
+		} else {
+			console.error(
+				"Error on trying deleting a pending location | JWT verification failed:",
+				error,
+			);
+			res.status(500).json({ message: error.message || String(error) });
 		}
 	}
 });

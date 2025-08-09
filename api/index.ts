@@ -350,7 +350,7 @@ app.get("/pending-locations", async (req: Request, res: Response) => {
 		res.status(200).json(pendingLocations);
 	} catch (error) {
 		console.error("Error on trying to retrieve pendingLocations:", error);
-		res.status(500).json({ message: error });
+		res.status(500).json({ message: error instanceof Error ? error.message : error });
 	}
 });
 

@@ -138,7 +138,7 @@ import { exchangeCodeGoogle } from "./lib/google.js";
  */
 
 const prisma = new PrismaClient();
-const app = express();
+export const app = express();
 const port = 8080;
 
 app.use(bodyParser.json());
@@ -227,6 +227,12 @@ app.post("/authenticate", async (req: Request, res: Response) => {
 app.post("/authenticate-admin", async (req: Request, res: Response) => {
 	const { username, password } = req.body;
 
+	if (!username || !password) {
+		return res
+			.status(400)
+			.json({ message: "Username and password are required" });
+	}
+
 	try {
 		const user = await prisma.adminUser.findUnique({
 			where: {
@@ -259,7 +265,7 @@ app.post("/authenticate-admin", async (req: Request, res: Response) => {
 		}
 	} catch (error) {
 		console.error("Unable to perform authentication", error);
-		res.sendStatus(500).json({
+		res.status(500).json({
 			message: "Unable to authenticate, please try again.",
 		});
 	}
@@ -642,6 +648,8 @@ app.patch("/locations", async (req: Request, res: Response) => {
 	}
 });
 
-app.listen(port, "0.0.0.0", () => {
-	console.log(`Server is running on port:`, port);
-});
+if (process.env.NODE_ENV !== "test") {
+	app.listen(port, "0.0.0.0", () => {
+		console.log(`Server is running on port:`, port);
+	});
+}

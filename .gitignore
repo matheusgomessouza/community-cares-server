@@ -1,5 +1,7 @@
 # Environment variables
+*.env.*
 *.env
 
 # Dependencies
 node_modules
+.vercel

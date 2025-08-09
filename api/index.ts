@@ -5,6 +5,8 @@ import bodyParser from "body-parser";
 import { PrismaClient } from "@prisma/client";
 import argon2 from "argon2";
 import * as jose from "jose";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "../swagger.js";
 
 import {
 	validateGithubToken,
@@ -13,17 +15,174 @@ import {
 import { exchangeCode } from "./lib/github.js";
 import { exchangeCodeGoogle } from "./lib/google.js";
 
+/**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     BearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ *   schemas:
+ *     Coordinates:
+ *       type: object
+ *       additionalProperties: true
+ *       description: Arbitrary JSON object with coordinate data.
+ *     Location:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *         name:
+ *           type: string
+ *         type:
+ *           type: string
+ *         address:
+ *           type: string
+ *         contact:
+ *           type: string
+ *         coords:
+ *           $ref: '#/components/schemas/Coordinates'
+ *     PendingLocation:
+ *       allOf:
+ *         - $ref: '#/components/schemas/Location'
+ *     AdminUserInput:
+ *       type: object
+ *       required: [name, username, email, password]
+ *       properties:
+ *         name:
+ *           type: string
+ *         username:
+ *           type: string
+ *         email:
+ *           type: string
+ *         password:
+ *           type: string
+ *     AdminAuthInput:
+ *       type: object
+ *       required: [username, password]
+ *       properties:
+ *         username:
+ *           type: string
+ *         password:
+ *           type: string
+ *     OAuthCodeInput:
+ *       type: object
+ *       required: [code]
+ *       properties:
+ *         code:
+ *           type: string
+ *         env:
+ *           type: string
+ *           description: Optional environment/channel identifier.
+ *     PendingLocationInput:
+ *       type: object
+ *       required: [name, type, address, contact, coords, provider]
+ *       properties:
+ *         name:
+ *           type: string
+ *         type:
+ *           type: string
+ *         address:
+ *           type: string
+ *         contact:
+ *           type: string
+ *         coords:
+ *           $ref: '#/components/schemas/Coordinates'
+ *         provider:
+ *           type: string
+ *           description: Token provider used for validation.
+ *           enum: [github, google]
+ *     ApproveLocationInput:
+ *       type: object
+ *       required: [id, name, type, address, contact, coords]
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: Pending location id to delete after approval.
+ *         name:
+ *           type: string
+ *         type:
+ *           type: string
+ *         address:
+ *           type: string
+ *         contact:
+ *           type: string
+ *         coords:
+ *           $ref: '#/components/schemas/Coordinates'
+ *     UpdateLocationFieldInput:
+ *       type: object
+ *       required: [field]
+ *       properties:
+ *         field:
+ *           type: object
+ *           required: [id, type, info]
+ *           properties:
+ *             id:
+ *               type: integer
+ *             type:
+ *               type: string
+ *               description: Column name to update.
+ *             info:
+ *               description: New value for the column.
+ *   responses:
+ *     MessageResponse:
+ *       description: A simple message response.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ */
+
 const prisma = new PrismaClient();
 const app = express();
 const port = 8080;
 
 app.use(bodyParser.json());
 app.use(cors());
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Health check
+ *     description: Returns a simple message indicating the server is running.
+ *     tags: [Misc]
+ *     responses:
+ *       200:
+ *         description: Server is running
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Server is running
+ */
 app.get("/", (req, res) => {
 	res.send("Server is running");
 });
 
+/**
+ * @swagger
+ * /authenticate:
+ *   post:
+ *     summary: Exchange OAuth code for tokens (GitHub)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/OAuthCodeInput'
+ *     responses:
+ *       200:
+ *         description: OAuth exchange successful
+ *       500:
+ *         description: Failed to exchange code
+ */
 app.post("/authenticate", async (req: Request, res: Response) => {
 	const { code, env } = req.body;
 
@@ -36,6 +195,35 @@ app.post("/authenticate", async (req: Request, res: Response) => {
 	}
 });
 
+/**
+ * @swagger
+ * /authenticate-admin:
+ *   post:
+ *     summary: Authenticate admin user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/AdminAuthInput'
+ *     responses:
+ *       200:
+ *         description: Authentication successful with JWT token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 token:
+ *                   type: string
+ *       401:
+ *         description: Incorrect password
+ *       500:
+ *         description: Unable to authenticate
+ */
 app.post("/authenticate-admin", async (req: Request, res: Response) => {
 	const { username, password } = req.body;
 
@@ -77,6 +265,24 @@ app.post("/authenticate-admin", async (req: Request, res: Response) => {
 	}
 });
 
+/**
+ * @swagger
+ * /authenticate-google:
+ *   post:
+ *     summary: Exchange OAuth code for tokens (Google)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/OAuthCodeInput'
+ *     responses:
+ *       200:
+ *         description: OAuth exchange successful
+ *       500:
+ *         description: Failed to exchange code
+ */
 app.post("/authenticate-google", async (req: Request, res: Response) => {
 	const { code } = req.body;
 
@@ -89,6 +295,23 @@ app.post("/authenticate-google", async (req: Request, res: Response) => {
 	}
 });
 
+/**
+ * @swagger
+ * /locations:
+ *   get:
+ *     summary: Retrieve a list of locations
+ *     description: Retrieve a list of all approved locations from the database.
+ *     tags: [Locations]
+ *     responses:
+ *       200:
+ *         description: A list of locations.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Location'
+ */
 app.get("/locations", async (req: Request, res: Response) => {
 	try {
 		const locations = await prisma.locations.findMany();
@@ -99,6 +322,22 @@ app.get("/locations", async (req: Request, res: Response) => {
 	}
 });
 
+/**
+ * @swagger
+ * /pending-locations:
+ *   get:
+ *     summary: Retrieve a list of pending locations
+ *     tags: [PendingLocations]
+ *     responses:
+ *       200:
+ *         description: A list of pending locations.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PendingLocation'
+ */
 app.get("/pending-locations", async (req: Request, res: Response) => {
 	try {
 		const pendingLocations = await prisma.pendingLocations.findMany();
@@ -109,6 +348,33 @@ app.get("/pending-locations", async (req: Request, res: Response) => {
 	}
 });
 
+/**
+ * @swagger
+ * /pending-location:
+ *   post:
+ *     summary: Create a new pending location
+ *     tags: [PendingLocations]
+ *     parameters:
+ *       - in: header
+ *         name: Authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Bearer token from GitHub or Google
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PendingLocationInput'
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/MessageResponse'
+ *       401:
+ *         description: Unauthorized or token expired
+ *       500:
+ *         description: Error creating pending location
+ */
 app.post("/pending-location", async (req: Request, res: Response) => {
 	const { name, type, address, contact, coords, provider } = req.body;
 
@@ -151,6 +417,26 @@ app.post("/pending-location", async (req: Request, res: Response) => {
 	}
 });
 
+/**
+ * @swagger
+ * /pending-location/{id}:
+ *   delete:
+ *     summary: Delete a pending location by id
+ *     tags: [PendingLocations]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/MessageResponse'
+ *       500:
+ *         description: JWT verification failed or other error
+ */
 app.delete("/pending-location/:id", async (req: Request, res: Response) => {
 	const id = req.params.id;
 
@@ -195,6 +481,26 @@ app.delete("/pending-location/:id", async (req: Request, res: Response) => {
 	}
 });
 
+/**
+ * @swagger
+ * /locations:
+ *   post:
+ *     summary: Approve a pending location and create it in locations
+ *     tags: [Locations]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ApproveLocationInput'
+ *     responses:
+ *       201:
+ *         $ref: '#/components/responses/MessageResponse'
+ *       500:
+ *         description: Error creating location
+ */
 app.post("/locations", async (req: Request, res: Response) => {
 	const { id, name, type, address, contact, coords } = req.body;
 
@@ -238,6 +544,24 @@ app.post("/locations", async (req: Request, res: Response) => {
 	}
 });
 
+/**
+ * @swagger
+ * /admin-user:
+ *   post:
+ *     summary: Create a new admin user
+ *     tags: [Admin]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/AdminUserInput'
+ *     responses:
+ *       201:
+ *         $ref: '#/components/responses/MessageResponse'
+ *       500:
+ *         description: Error creating admin user
+ */
 app.post("/admin-user", async (req: Request, res: Response) => {
 	const { name, username, email, password } = req.body;
 
@@ -259,6 +583,26 @@ app.post("/admin-user", async (req: Request, res: Response) => {
 	}
 });
 
+/**
+ * @swagger
+ * /locations:
+ *   patch:
+ *     summary: Update a single field of a location
+ *     tags: [Locations]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateLocationFieldInput'
+ *     responses:
+ *       200:
+ *         $ref: '#/components/responses/MessageResponse'
+ *       500:
+ *         description: Error updating location
+ */
 app.patch("/locations", async (req: Request, res: Response) => {
 	const { field } = req.body;
 

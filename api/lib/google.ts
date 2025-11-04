@@ -1,10 +1,11 @@
 import { OAuth2Client } from "google-auth-library";
+import { envs } from "env.js";
 
 export async function exchangeCodeGoogle(code: string) {
 	const client = new OAuth2Client(
-		process.env.GOOGLE_CLIENT_ID,
-		process.env.GOOGLE_SECRET,
-		process.env.GOOGLE_REDIRECT_URI,
+		envs.GOOGLE_CLIENT_ID,
+		envs.GOOGLE_SECRET,
+		envs.GOOGLE_REDIRECT_URI,
 	);
 
 	try {

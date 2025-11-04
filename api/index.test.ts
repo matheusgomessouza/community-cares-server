@@ -61,12 +61,21 @@ const hoisted = vi.hoisted(() => ({
 	pendingFindMany: vi.fn(),
 	findUnique: vi.fn(),
 	pendingDelete: vi.fn(),
+	jwtVerify: vi.fn(),
 }));
 
 vi.mock("./lib/github.js", () => {
 	return { exchangeCode: vi.fn() };
 });
 vi.mock("./lib/google.js", () => ({ exchangeCodeGoogle: vi.fn() }));
+
+vi.mock("jose", async (importOriginal) => {
+	const mod = await importOriginal<typeof jose>();
+	return {
+		...mod,
+		jwtVerify: hoisted.jwtVerify,
+	};
+});
 
 vi.mock("@prisma/client", () => {
 	const {
@@ -118,16 +127,11 @@ let exchangeCodeGoogle: (code: string) => Promise<
 	| undefined
 >;
 let consoleErrorSpy: MockInstance<
-	[message?: unknown, ...optionalParams: unknown[]],
-	void
+	(message?: unknown, ...optionalParams: unknown[]) => void
 >;
 let argon2: {
 	verify: ReturnType<typeof vi.fn>;
 };
-let jwtVerifySpy: MockInstance<
-	Parameters<typeof jose.jwtVerify>,
-	ReturnType<typeof jose.jwtVerify>
->;
 
 beforeAll(async () => {
 	const module = await import("./index.js");
@@ -155,12 +159,10 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	process.env.AUTH_SECRET_KEY = "test-secret";
 	consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-	jwtVerifySpy = vi.spyOn(jose, "jwtVerify");
 });
 
 afterEach(() => {
 	consoleErrorSpy.mockRestore();
-	jwtVerifySpy.mockRestore();
 });
 
 describe("Health Check", () => {
@@ -189,7 +191,11 @@ describe("POST /authenticate", () => {
 			token_type: "bearer",
 			scope: "read:user",
 		});
-		expect(exchangeCode).toHaveBeenCalledWith("valid-code", "dev");
+		expect(exchangeCode).toHaveBeenCalledWith(
+			"valid-code",
+			undefined,
+			"dev",
+		);
 	});
 
 	it("returns 500 on exchange error", async () => {
@@ -243,6 +249,35 @@ describe("POST /authenticate-admin", () => {
 
 		expect(res.status).toBe(401);
 		expect(res.body).toEqual({ message: "Incorrect password." });
+	});
+
+	it("returns 401 when user is not found", async () => {
+		hoisted.findUnique.mockResolvedValue(null);
+
+		const res = await request(app)
+			.post("/authenticate-admin")
+			.send({ username: "not-a-user", password: "password" });
+
+		expect(res.status).toBe(401);
+		expect(res.body).toEqual({ message: "Incorrect password." });
+	});
+
+	it("returns 400 when username or password is not provided", async () => {
+		const res1 = await request(app)
+			.post("/authenticate-admin")
+			.send({ username: "alice" });
+		expect(res1.status).toBe(400);
+		expect(res1.body).toEqual({
+			message: "Username and password are required",
+		});
+
+		const res2 = await request(app)
+			.post("/authenticate-admin")
+			.send({ password: "password" });
+		expect(res2.status).toBe(400);
+		expect(res2.body).toEqual({
+			message: "Username and password are required",
+		});
 	});
 
 	it("returns 500 when a server error occurs", async () => {
@@ -323,10 +358,9 @@ describe("DELETE /pending-location/:id", () => {
 	});
 
 	it("returns 200 and deletes the pending location when JWT is valid", async () => {
-		jwtVerifySpy.mockResolvedValue({
+		hoisted.jwtVerify.mockResolvedValue({
 			payload: {},
 			protectedHeader: { alg: "HS256" },
-			key: new Uint8Array(),
 		});
 		hoisted.pendingDelete.mockResolvedValue({});
 
@@ -344,7 +378,7 @@ describe("DELETE /pending-location/:id", () => {
 	});
 
 	it("returns 500 when JWT is expired", async () => {
-		jwtVerifySpy.mockRejectedValue(
+		hoisted.jwtVerify.mockRejectedValue(
 			new jose.errors.JWTExpired("expired", {} as JWTPayload),
 		);
 
@@ -357,7 +391,7 @@ describe("DELETE /pending-location/:id", () => {
 	});
 
 	it("returns 500 when JWT verification fails with other error", async () => {
-		jwtVerifySpy.mockRejectedValue(new Error("bad token"));
+		hoisted.jwtVerify.mockRejectedValue(new Error("bad token"));
 
 		const res = await request(app)
 			.delete("/pending-location/10")
@@ -367,10 +401,9 @@ describe("DELETE /pending-location/:id", () => {
 	});
 
 	it("returns 500 when delete throws", async () => {
-		jwtVerifySpy.mockResolvedValue({
+		hoisted.jwtVerify.mockResolvedValue({
 			payload: {},
 			protectedHeader: { alg: "HS256" },
-			key: new Uint8Array(),
 		});
 		hoisted.pendingDelete.mockRejectedValue(new Error("db error"));
 

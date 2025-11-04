@@ -139,7 +139,7 @@ import { exchangeCodeGoogle } from "./lib/google.js";
 
 const prisma = new PrismaClient();
 export const app = express();
-const port = 8080;
+const port = 8088;
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -184,10 +184,14 @@ app.get("/", (req, res) => {
  *         description: Failed to exchange code
  */
 app.post("/authenticate", async (req: Request, res: Response) => {
-	const { code, env } = req.body;
+	const { code, env, code_verifier } = req.body;
+
+	if (!code) {
+		return res.status(400).json({ message: "Code is required" });
+	}
 
 	try {
-		const response = await exchangeCode(code, env);
+		const response = await exchangeCode(code, code_verifier, env);
 		res.status(200).json(response);
 	} catch (error: unknown) {
 		console.error("Error exchanging code for token:", error);

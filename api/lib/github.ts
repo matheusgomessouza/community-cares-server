@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import { envs } from "env.js";
 
-export async function exchangeCode(
+export async function exchangeCodeGithub(
 	code: string,
 	codeVerifier: string,
 	env: string,

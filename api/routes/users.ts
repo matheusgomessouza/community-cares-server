@@ -22,12 +22,9 @@ const usersController = new UsersController();
  *       500:
  *         description: Failed to exchange code
  */
-router.post(
-	"/users/authenticate/github",
-	async (req: Request, res: Response) => {
-		await usersController.authenticateWithGitHub(req, res);
-	},
-);
+router.post("/authenticate/github", async (req: Request, res: Response) => {
+	await usersController.authenticateWithGitHub(req, res);
+});
 
 /**
  * @swagger
@@ -47,11 +44,8 @@ router.post(
  *       500:
  *         description: Failed to exchange code
  */
-router.post(
-	"/users/authenticate/google",
-	async (req: Request, res: Response) => {
-		await usersController.authenticateWithGoogle(req, res);
-	},
-);
+router.post("/authenticate/google", async (req: Request, res: Response) => {
+	await usersController.authenticateWithGoogle(req, res);
+});
 
 export default router;

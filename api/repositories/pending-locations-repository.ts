@@ -10,7 +10,7 @@ export class PendingLocationsRepository {
 	}
 
 	async getAllPendingLocations() {
-		await prisma.pendingLocations.findMany();
+		return await prisma.pendingLocations.findMany();
 	}
 
 	async createPendingLocation(

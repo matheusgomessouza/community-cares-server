@@ -8,29 +8,41 @@ export class AdminUsersAuthenticateService {
 			const adminUsersRepository = new AdminUsersRepository();
 			const user = await adminUsersRepository.findByUsername(username);
 
-			const passwordMatch =
-				user && (await argon2.verify(user?.password, password));
+			if (!user) {
+				return {
+					payload: undefined,
+					message: "Error: Username must be valid.",
+				};
+			}
+
+			const passwordMatch = await argon2.verify(user.password, password);
 
 			if (passwordMatch) {
 				const secret = new TextEncoder().encode(
 					process.env.AUTH_SECRET_KEY,
 				);
-				const jwtConfig = new jose.SignJWT()
+				const jwtToken = await new jose.SignJWT({})
 					.setProtectedHeader({
 						alg: "HS256",
 					})
+					.setIssuedAt()
 					.setExpirationTime("2h")
 					.sign(secret);
 
-				const jwtToken = (await jwtConfig).toString();
-
 				return jwtToken;
-			} else {
-				return;
-				res.status(401).json({ message: "Incorrect password." });
 			}
+
+			return {
+				payload: undefined,
+				message: "Error: Invalid username or password.",
+			};
 		} catch (error) {
-			return error;
+			console.error("Authentication error:", error);
+			return {
+				payload: undefined,
+				message:
+					"Error[AdminUsersAuthenticateService]: Unable to authenticate, please try again.",
+			};
 		}
 	}
 }

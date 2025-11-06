@@ -20,7 +20,7 @@ const pendingLocationsController = new PendingLocationsController();
  *               items:
  *                 $ref: '#/components/schemas/PendingLocation'
  */
-router.get("/pending-locations", async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
 	await pendingLocationsController.getAllPendingLocations(req, res);
 });
 
@@ -51,7 +51,7 @@ router.get("/pending-locations", async (req: Request, res: Response) => {
  *       500:
  *         description: Error creating pending location
  */
-router.post("/pending-locations", async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
 	await pendingLocationsController.createPendingLocation(req, res);
 });
 
@@ -75,7 +75,7 @@ router.post("/pending-locations", async (req: Request, res: Response) => {
  *       500:
  *         description: JWT verification failed or other error
  */
-router.delete("/pending-locations/:id", async (req: Request, res: Response) => {
+router.delete("/:id", async (req: Request, res: Response) => {
 	await pendingLocationsController.deletePendingLocation(req, res);
 });
 

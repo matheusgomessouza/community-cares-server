@@ -21,7 +21,7 @@ const locationsController = new LocationsController();
  *               items:
  *                 $ref: '#/components/schemas/Location'
  */
-router.get("/", async (res: Response) => {
+router.get("/", async (_: Request, res: Response) => {
 	await locationsController.getLocations(res);
 });
 

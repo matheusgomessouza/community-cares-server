@@ -33,12 +33,9 @@ const adminUsersController = new AdminUsersController();
  *       500:
  *         description: Unable to authenticate
  */
-router.post(
-	"/admin-users/authenticate",
-	async (req: Request, res: Response) => {
-		await adminUsersController.authenticate(req, res);
-	},
-);
+router.post("/authenticate", async (req: Request, res: Response) => {
+	await adminUsersController.authenticate(req, res);
+});
 
 /**
  * @swagger
@@ -58,7 +55,7 @@ router.post(
  *       500:
  *         description: Error creating admin user
  */
-router.post("/admin-users", async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
 	await adminUsersController.createAdminUser(req, res);
 });
 

@@ -1,24 +1,25 @@
 import * as jose from "jose";
 import { Request, Response } from "express";
-import { PendingLocationsRepository } from "api/repositories/pending-locations-repository.js";
 import {
 	validateGithubToken,
 	validateGoogleToken,
 } from "api/middleware/token-validation.js";
+import { PendingLocationsCreateService } from "api/services/pending-locations/create.js";
+import { PendingLocationsRetrieveService } from "api/services/pending-locations/retrieve.js";
+import { PendingLocationsDeleteService } from "api/services/pending-locations/delete.js";
 
 export class PendingLocationsController {
-	async getAllPendingLocations(req: Request, res: Response) {
+	async getAllPendingLocations(_: Request, res: Response) {
 		try {
-			const pendingLocationsRepository = new PendingLocationsRepository();
-
-			const pendingLocations =
-				await pendingLocationsRepository.getAllPendingLocations();
-			res.status(200).json(pendingLocations);
+			const pendingLocationsRetrieveService =
+				new PendingLocationsRetrieveService();
+			const response =
+				await pendingLocationsRetrieveService.retrieveAllPendingLocations();
+			res.status(200).json({
+				message: response.message,
+				payload: response.payload,
+			});
 		} catch (error) {
-			console.error(
-				"Error on trying to retrieve pendingLocations:",
-				error,
-			);
 			res.status(500).json({
 				message: error instanceof Error ? error.message : error,
 			});
@@ -44,20 +45,22 @@ export class PendingLocationsController {
 
 		if (tokenValidity === 200) {
 			try {
-				const pendingLocationsRepository =
-					new PendingLocationsRepository();
-				await pendingLocationsRepository.createPendingLocation(
-					name,
-					type,
-					address,
-					contact,
-					coords,
-				);
+				const pendingLocationsCreateService =
+					new PendingLocationsCreateService();
+
+				const response =
+					await pendingLocationsCreateService.createLocation(
+						name,
+						type,
+						address,
+						contact,
+						coords,
+					);
 				res.status(200).json({
-					message: "Pending Location successfully created!",
+					message: response.message,
+					payload: response.payload,
 				});
 			} catch (error) {
-				console.error("Error on trying creating a location:", error);
 				res.status(500).json({
 					message:
 						error instanceof Error ? error.message : String(error),
@@ -65,7 +68,8 @@ export class PendingLocationsController {
 			}
 		} else {
 			res.status(401).json({
-				message: "Unable to perform query | Token expired",
+				message:
+					"Error: Could not create pending location. | Token expired",
 			});
 		}
 	}
@@ -88,13 +92,15 @@ export class PendingLocationsController {
 			await jose.jwtVerify(access_token, secret, {
 				algorithms: ["HS256"],
 			});
-			const pendingLocationsRepository = new PendingLocationsRepository();
-
-			await pendingLocationsRepository.deletePendingLocationById(
-				Number(id),
-			);
+			const pendingLocationsDeleteService =
+				new PendingLocationsDeleteService();
+			const response =
+				await pendingLocationsDeleteService.deletePendingLocationById(
+					Number(id),
+				);
 			res.status(200).json({
-				message: "Pending Location successfully deleted!",
+				message: response.message,
+				payload: response.payload,
 			});
 		} catch (error) {
 			if (error instanceof jose.errors.JWTExpired) {

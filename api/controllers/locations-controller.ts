@@ -1,17 +1,21 @@
 import * as jose from "jose";
 import { Request, Response } from "express";
-import { LocationsRepository } from "api/repositories/locations-repository.js";
-import { PendingLocationsRepository } from "api/repositories/pending-locations-repository.js";
+import { LocationsRetrieveService } from "api/services/locations/retrieve.js";
+import { LocationsCreateService } from "api/services/locations/create.js";
+import { LocationsUpdateService } from "api/services/locations/update.js";
 
 export class LocationsController {
 	async getLocations(res: Response) {
 		try {
-			const locationsRepository = new LocationsRepository();
-			const locations = await locationsRepository.getAllLocations();
+			const locationsRetrieveService = new LocationsRetrieveService();
+			const response =
+				await locationsRetrieveService.retrieveAllLocations();
 
-			res.status(200).json(locations);
+			res.status(200).json({
+				message: response.message,
+				payload: response.payload,
+			});
 		} catch (error) {
-			console.error("Error on trying to retrieve locations:", error);
 			res.status(500).json({ message: error });
 		}
 	}
@@ -31,23 +35,23 @@ export class LocationsController {
 		const secret = new TextEncoder().encode(process.env.AUTH_SECRET_KEY);
 
 		try {
-			const locationsRepository = new LocationsRepository();
-			const pendingLocationsRepository = new PendingLocationsRepository();
-
 			await jose.jwtVerify(access_token, secret, {
 				algorithms: ["HS256"],
 			});
 
-			await locationsRepository.createLocation(
+			const locationsCreateService = new LocationsCreateService();
+			const response = await locationsCreateService.createLocation(
+				id,
 				name,
 				type,
 				address,
 				contact,
 				coords,
 			);
-
-			await pendingLocationsRepository.deletePendingLocationById(id);
-			res.status(201).json({ message: "Location successfully created!" });
+			res.status(201).json({
+				message: response.message,
+				payload: response.payload,
+			});
 		} catch (error) {
 			res.status(500).json({
 				message: "Error on trying creating a location",
@@ -75,12 +79,12 @@ export class LocationsController {
 				algorithms: ["HS256"],
 			});
 
-			const locationsRepository = new LocationsRepository();
-
-			await locationsRepository.updateLocation(field);
+			const locationsUpdateService = new LocationsUpdateService();
+			const response = await locationsUpdateService.updateLocation(field);
 
 			res.status(200).json({
-				message: "Location information successfully updated!",
+				message: response.message,
+				payload: response.payload,
 			});
 		} catch (error) {
 			res.status(500).json({

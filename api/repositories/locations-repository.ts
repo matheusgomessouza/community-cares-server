@@ -12,7 +12,7 @@ export class LocationsRepository {
 		type: string,
 		address: string,
 		contact: string,
-		coords: string,
+		coords: { latitude: number; longitude: number },
 	) {
 		return await prisma.locations.create({
 			data: {

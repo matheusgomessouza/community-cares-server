@@ -1,10 +1,11 @@
 import fetch from "node-fetch";
 import { OAuth2Client } from "google-auth-library";
+import { envs } from "env.js";
 
 export async function validateGithubToken(token: string) {
 	// Encode the credentials in base64
 	const credentials = Buffer.from(
-		`${process.env.GITHUB_CLIENT_ID_WEB}:${process.env.GITHUB_CLIENT_SECRET_WEB}`,
+		`${envs.GITHUB_CLIENT_ID_WEB_DEV}:${envs.GITHUB_CLIENT_SECRET_WEB_DEV}`,
 	).toString("base64");
 
 	const options = {
@@ -19,7 +20,7 @@ export async function validateGithubToken(token: string) {
 
 	try {
 		const response = await fetch(
-			`https://api.github.com/applications/${process.env.GITHUB_CLIENT_ID_WEB}/token`,
+			`https://api.github.com/applications/${envs.GITHUB_CLIENT_ID_WEB_DEV}/token`,
 			options,
 		);
 		return response.status;

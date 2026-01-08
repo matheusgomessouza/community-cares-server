@@ -1,16 +1,31 @@
 import fetch from "node-fetch";
 import { envs } from "env.js";
 
+type EnvsWithOptionalProps = typeof envs & {
+	GITHUB_CLIENT_ID_WEB_PRD?: string;
+	GITHUB_CLIENT_ID_WEB_DEV?: string;
+	GITHUB_CLIENT_SECRET_WEB_PRD?: string;
+	GITHUB_CLIENT_SECRET_WEB_DEV?: string;
+};
+
 export async function exchangeCodeGithub(
 	code: string,
 	codeVerifier: string,
 	env: string,
 ) {
+	const isProd = process.env.NODE_ENV === "production";
+	const envsTyped = envs as EnvsWithOptionalProps;
 	const client_id =
-		env === "web" ? envs.GITHUB_CLIENT_ID_WEB_DEV : envs.GITHUB_CLIENT_ID;
+		env === "web"
+			? isProd
+				? envsTyped.GITHUB_CLIENT_ID_WEB_PRD
+				: envsTyped.GITHUB_CLIENT_ID_WEB_DEV
+			: envs.GITHUB_CLIENT_ID;
 	const client_secret =
 		env === "web"
-			? envs.GITHUB_CLIENT_SECRET_WEB_DEV
+			? isProd
+				? envsTyped.GITHUB_CLIENT_SECRET_WEB_PRD
+				: envsTyped.GITHUB_CLIENT_SECRET_WEB_DEV
 			: envs.GITHUB_CLIENT_SECRET;
 
 	if (!client_id || !client_secret) {

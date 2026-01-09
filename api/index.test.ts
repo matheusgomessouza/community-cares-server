@@ -264,7 +264,9 @@ describe("POST /authenticate-admin", () => {
 			.send({ username: "alice", password: "wrong" });
 
 		expect(res.status).toBe(401);
-		expect(res.body).toEqual({ message: "Error: Invalid username or password." });
+		expect(res.body).toEqual({
+			message: "Error: Invalid username or password.",
+		});
 	});
 
 	it("returns 401 when user is not found", async () => {

@@ -3,10 +3,27 @@ import { OAuth2Client } from "google-auth-library";
 import { envs } from "env.js";
 
 export async function validateGithubToken(token: string) {
+	// Determine which credentials to use based on environment
+	const isProduction = process.env.NODE_ENV === "production";
+	const clientId = isProduction
+		? "GITHUB_CLIENT_ID_WEB_PRD" in envs
+			? envs.GITHUB_CLIENT_ID_WEB_PRD
+			: ""
+		: "GITHUB_CLIENT_ID_WEB_DEV" in envs
+			? envs.GITHUB_CLIENT_ID_WEB_DEV
+			: "";
+	const clientSecret = isProduction
+		? "GITHUB_CLIENT_SECRET_WEB_PRD" in envs
+			? envs.GITHUB_CLIENT_SECRET_WEB_PRD
+			: ""
+		: "GITHUB_CLIENT_SECRET_WEB_DEV" in envs
+			? envs.GITHUB_CLIENT_SECRET_WEB_DEV
+			: "";
+
 	// Encode the credentials in base64
-	const credentials = Buffer.from(
-		`${envs.GITHUB_CLIENT_ID_WEB_DEV}:${envs.GITHUB_CLIENT_SECRET_WEB_DEV}`,
-	).toString("base64");
+	const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
+		"base64",
+	);
 
 	const options = {
 		method: "POST",
@@ -20,7 +37,7 @@ export async function validateGithubToken(token: string) {
 
 	try {
 		const response = await fetch(
-			`https://api.github.com/applications/${envs.GITHUB_CLIENT_ID_WEB_DEV}/token`,
+			`https://api.github.com/applications/${clientId}/token`,
 			options,
 		);
 		return response.status;

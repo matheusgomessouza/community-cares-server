@@ -62,6 +62,7 @@ const hoisted = vi.hoisted(() => ({
 	findUnique: vi.fn(),
 	pendingDelete: vi.fn(),
 	jwtVerify: vi.fn(),
+	fetch: vi.fn(),
 }));
 
 vi.mock("env.js", () => ({
@@ -123,6 +124,26 @@ vi.mock("argon2", () => ({
 	},
 }));
 
+// Mock node-fetch
+vi.mock("node-fetch", () => ({
+	default: hoisted.fetch,
+	// Needed for some versions of node-fetch or if used as default import
+}));
+
+// Mock auth tokens service
+vi.mock("api/services/auth-tokens.js", () => ({
+	createAccessToken: vi.fn().mockResolvedValue("mock-access-token"),
+	createRefreshToken: vi.fn().mockResolvedValue("mock-refresh-token"),
+	setRefreshCookie: vi.fn(),
+}));
+
+// Mock refresh tokens repository
+vi.mock("api/repositories/refresh-tokens-repository.js", () => ({
+	RefreshTokensRepository: class {
+		save = vi.fn().mockResolvedValue(undefined);
+	},
+}));
+
 let app: Express;
 let exchangeCodeGithub: (
 	code: string,
@@ -149,6 +170,7 @@ let argon2: {
 };
 
 beforeAll(async () => {
+	// Import mock dependencies setup
 	const module = await import("./index.js");
 	app = module.app;
 
@@ -190,11 +212,22 @@ describe("Health Check", () => {
 });
 
 describe("POST /authenticate", () => {
-	it("returns 200 and the exchange response", async () => {
+	it("returns 200 and the tokens", async () => {
 		(exchangeCodeGithub as unknown as MockInstance).mockResolvedValue({
 			access_token: "token123",
 			token_type: "bearer",
 			scope: "read:user",
+		});
+		hoisted.fetch.mockResolvedValue({
+			ok: true,
+			text: async () =>
+				JSON.stringify({
+					id: 12345,
+					name: "Test User",
+					login: "testuser",
+					avatar_url: "http://avatar.url",
+					email: "test@example.com",
+				}),
 		});
 
 		const res = await request(app)
@@ -203,9 +236,11 @@ describe("POST /authenticate", () => {
 
 		expect(res.status).toBe(200);
 		expect(res.body).toEqual({
-			access_token: "token123",
-			token_type: "bearer",
-			scope: "read:user",
+			access_token: "mock-access-token",
+			refresh_token: "mock-refresh-token",
+			provider: {
+				access_token: "token123",
+			},
 		});
 		expect(exchangeCodeGithub).toHaveBeenCalledWith(
 			"valid-code",
@@ -245,6 +280,7 @@ describe("POST /authenticate-admin", () => {
 		expect(res.body).toEqual({
 			message: "Authentication successfully done.",
 			token: expect.any(String),
+			refresh_token: "mock-refresh-token", // Added expectation
 		});
 		expect(hoisted.findUnique).toHaveBeenCalledWith({
 			where: { username: "alice" },
@@ -313,11 +349,20 @@ describe("POST /authenticate-admin", () => {
 });
 
 describe("POST /authenticate-google", () => {
-	it("returns 200 and the exchange response", async () => {
+	it("returns 200 and the tokens", async () => {
 		(exchangeCodeGoogle as unknown as MockInstance).mockResolvedValue({
 			access_token: "g-token",
 			token_type: "Bearer",
 			scope: "profile email",
+		});
+		hoisted.fetch.mockResolvedValue({
+			ok: true,
+			text: async () =>
+				JSON.stringify({
+					names: [{ displayName: "Google User" }],
+					emailAddresses: [{ value: "google@example.com" }],
+					resourceName: "people/123",
+				}),
 		});
 
 		const res = await request(app)
@@ -326,9 +371,11 @@ describe("POST /authenticate-google", () => {
 
 		expect(res.status).toBe(200);
 		expect(res.body).toEqual({
-			access_token: "g-token",
-			token_type: "Bearer",
-			scope: "profile email",
+			access_token: "mock-access-token",
+			refresh_token: "mock-refresh-token",
+			provider: {
+				access_token: "g-token",
+			},
 		});
 		expect(exchangeCodeGoogle).toHaveBeenCalledWith("valid-code");
 	});

@@ -9,6 +9,7 @@ import usersRouter from "api/routes/users.js";
 import adminUsersRouter from "api/routes/admin-users.js";
 import locationsRouter from "api/routes/locations.js";
 import pendingLocationsRouter from "api/routes/pending-locations.js";
+import authRouter from "api/routes/auth.js";
 
 /**
  * @swagger
@@ -135,13 +136,20 @@ export const app = express();
 const port = 8088;
 
 app.use(bodyParser.json());
-app.use(cors());
+app.use(
+	cors({
+		origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+		credentials: true,
+	}),
+);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+app.use("/auth", authRouter);
 app.use("/users", usersRouter);
 app.use("/admin-users", adminUsersRouter);
 app.use("/locations", locationsRouter);
 app.use("/pending-locations", pendingLocationsRouter);
+app.use("/auth", authRouter);
 
 /**
  * @swagger

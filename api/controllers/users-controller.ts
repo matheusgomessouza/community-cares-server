@@ -13,7 +13,6 @@ type OAuthTokenResponse = {
 	access_token?: string;
 	id_token?: string;
 	refresh_token?: string;
-	// outros campos possíveis do provedor
 };
 
 type GitHubUserResponse = {
@@ -37,7 +36,6 @@ type GooglePeopleResponse = {
 };
 
 export class UsersController {
-	// Busca perfil GitHub server-side com logs e parsing robusto
 	async fetchGithubProfile(providerAccessToken: string) {
 		if (!providerAccessToken) {
 			throw new Error("No GitHub access token provided");
@@ -49,7 +47,6 @@ export class UsersController {
 			"User-Agent": "community-cares-server",
 		};
 
-		// Buscar perfil básico
 		const userRes = await fetch("https://api.github.com/user", {
 			method: "GET",
 			headers,
@@ -78,7 +75,6 @@ export class UsersController {
 			throw new Error("Failed to fetch GitHub user profile");
 		}
 
-		// Tentar obter email primário se não vier no perfil
 		let email = userJson.email ?? undefined;
 		if (!email) {
 			const emailsRes = await fetch(
@@ -135,7 +131,6 @@ export class UsersController {
 		}
 
 		try {
-			// 1) Exchange code pelo token do provedor
 			const response = (await exchangeCodeGithub(
 				code,
 				code_verifier,
@@ -148,7 +143,6 @@ export class UsersController {
 					.json({ message: "Failed to exchange code with GitHub" });
 			}
 
-			// 2) Extrair access_token (GitHub)
 			const providerAccessToken = response.access_token;
 			if (!providerAccessToken) {
 				console.error(
@@ -160,7 +154,6 @@ export class UsersController {
 				});
 			}
 
-			// 3) Buscar perfil do usuário no GitHub (server-side)
 			let profile;
 			try {
 				profile = await this.fetchGithubProfile(providerAccessToken);
@@ -171,7 +164,6 @@ export class UsersController {
 					.json({ message: "Failed to fetch GitHub profile" });
 			}
 
-			// 4) Montar payload mínimo e seguro para nossos tokens (não incluir provider tokens)
 			const userPayload = {
 				sub: `github:${profile.providerId}`,
 				provider: "github",
@@ -181,16 +173,13 @@ export class UsersController {
 				email: profile.email,
 			};
 
-			// 5) Criar access + refresh tokens internos
 			const accessToken = await createAccessToken(userPayload);
 			const refreshToken = await createRefreshToken(userPayload);
 
-			// 6) Persistir refresh token (com expiresAt)
 			const repo = new RefreshTokensRepository();
 			const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
 			await repo.save(refreshToken, userPayload.sub, expiresAt);
 
-			// 7) Responder conforme env
 			if (env === "web") {
 				setRefreshCookie(res, refreshToken);
 				return res
@@ -215,7 +204,6 @@ export class UsersController {
 		access_token?: string;
 		id_token?: string;
 	}) {
-		// Preferir People API com access_token
 		if (tokens.access_token) {
 			const res = await fetch(
 				"https://people.googleapis.com/v1/people/me?personFields=names,photos,emailAddresses",
@@ -257,7 +245,6 @@ export class UsersController {
 			return { providerId, name, avatar_url, email };
 		}
 
-		// Fallback: decodificar id_token
 		if (tokens.id_token) {
 			try {
 				const parts = tokens.id_token.split(".");
@@ -287,7 +274,6 @@ export class UsersController {
 		}
 
 		try {
-			// 1) Exchange code pelo token do Google
 			const response = (await exchangeCodeGoogle(
 				code,
 			)) as OAuthTokenResponse | null;
@@ -298,11 +284,9 @@ export class UsersController {
 					.json({ message: "Failed to exchange code with Google" });
 			}
 
-			// 2) Extrair token (pode ser access_token ou id_token)
 			const providerAccessToken = response.access_token;
 			const idToken = response.id_token;
 
-			// 3) Buscar perfil (usa access_token preferencialmente, senão id_token)
 			let profile;
 			try {
 				profile = await this.fetchGoogleProfile({
@@ -316,7 +300,6 @@ export class UsersController {
 					.json({ message: "Failed to fetch Google profile" });
 			}
 
-			// 4) Montar payload mínimo
 			const userPayload = {
 				sub: `google:${profile.providerId}`,
 				provider: "google",
@@ -326,16 +309,13 @@ export class UsersController {
 				email: profile.email,
 			};
 
-			// 5) Criar tokens internos
 			const accessToken = await createAccessToken(userPayload);
 			const refreshToken = await createRefreshToken(userPayload);
 
-			// 6) Persistir refresh token
 			const repo = new RefreshTokensRepository();
 			const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
 			await repo.save(refreshToken, userPayload.sub, expiresAt);
 
-			// 7) Responder conforme env
 			if (env === "web") {
 				setRefreshCookie(res, refreshToken);
 				return res

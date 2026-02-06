@@ -149,7 +149,6 @@ app.use("/users", usersRouter);
 app.use("/admin-users", adminUsersRouter);
 app.use("/locations", locationsRouter);
 app.use("/pending-locations", pendingLocationsRouter);
-app.use("/auth", authRouter);
 
 /**
  * @swagger

@@ -14,7 +14,7 @@ const refreshTokenController = new RefreshTokenController();
  *       200:
  *         description: New access token
  *       401:
- *         description: Unixthorized
+ *         description: Unauthorized
  */
 router.post("/refresh", async (req: Request, res: Response) => {
 	await refreshTokenController.refresh(req, res);

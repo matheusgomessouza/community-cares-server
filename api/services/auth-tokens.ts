@@ -4,13 +4,20 @@ import { Response } from "express";
 const ACCESS_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_IN = "30d";
 
-const accessSecret = new TextEncoder().encode(process.env.AUTH_SECRET_KEY);
-const refreshSecret = new TextEncoder().encode(
-	process.env.REFRESH_SECRET_KEY ||
-		process.env.AUTH_SECRET_KEY ||
-		"fallback_secret",
-);
+const rawAccessSecret = process.env.AUTH_SECRET_KEY;
+if (!rawAccessSecret) {
+	throw new Error("AUTH_SECRET_KEY environment variable must be set");
+}
+const accessSecret = new TextEncoder().encode(rawAccessSecret);
 
+const rawRefreshSecret =
+	process.env.REFRESH_SECRET_KEY || process.env.AUTH_SECRET_KEY;
+if (!rawRefreshSecret) {
+	throw new Error(
+		"REFRESH_SECRET_KEY or AUTH_SECRET_KEY environment variable must be set",
+	);
+}
+const refreshSecret = new TextEncoder().encode(rawRefreshSecret);
 export async function createAccessToken(payload: jose.JWTPayload = {}) {
 	return await new jose.SignJWT(payload)
 		.setProtectedHeader({ alg: "HS256" })

@@ -66,7 +66,9 @@ export class RefreshTokenController {
 			setRefreshCookie(res, newRefreshToken);
 		}
 
-		return res.status(200).json({ access_token: accessToken });
+		return res
+			.status(200)
+			.json({ access_token: accessToken, refresh_token: newRefreshToken });
 	}
 
 	async logout(req: Request, res: Response) {

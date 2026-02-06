@@ -1,10 +1,16 @@
 import { Request, Response } from "express";
 import { AdminUsersAuthenticateService } from "../services/admin-users/authenticate.js";
 import { AdminUsersCreateService } from "api/services/admin-users/create.js";
+import {
+	createAccessToken,
+	createRefreshToken,
+	setRefreshCookie,
+} from "api/services/auth-tokens.js";
+import { RefreshTokensRepository } from "api/repositories/refresh-tokens-repository.js";
 
 export class AdminUsersController {
 	async authenticate(req: Request, res: Response) {
-		const { username, password } = req.body;
+		const { username, password, env } = req.body;
 
 		if (!username || !password) {
 			return res
@@ -24,10 +30,30 @@ export class AdminUsersController {
 			if (typeof response === "object" && response.message) {
 				return res.status(401).json({ message: response.message });
 			} else {
-				res.status(200).json({
-					message: "Authentication successfully done.",
-					token: response,
+				const accessToken = await createAccessToken({
+					sub: username,
+					role: "admin",
 				});
+				const refreshToken = await createRefreshToken({
+					sub: username,
+					role: "admin",
+				});
+
+				const repo = new RefreshTokensRepository();
+				await repo.save(refreshToken, username);
+
+				if (env === "web") {
+					setRefreshCookie(res, refreshToken);
+					return res
+						.status(200)
+						.json({ message: "Authentication successfully done." });
+				} else {
+					return res.status(200).json({
+						message: "Authentication successfully done.",
+						token: accessToken,
+						refresh_token: refreshToken,
+					});
+				}
 			}
 		} catch (error) {
 			res.status(500).json({

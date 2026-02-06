@@ -59,7 +59,15 @@ export class RefreshTokenController {
 			sub: payload.sub,
 			role: payload.role,
 		});
-		await repo.save(newRefreshToken, payload.sub as string);
+
+		// Derive expiresAt for the new refresh token from its JWT exp claim
+		const newPayload = await verifyRefreshToken(newRefreshToken);
+		let expiresAt: Date | undefined;
+		if (newPayload && (newPayload as any).exp) {
+			expiresAt = new Date(((newPayload as any).exp as number) * 1000);
+		}
+
+		await repo.save(newRefreshToken, payload.sub as string, expiresAt);
 		await repo.revoke(token);
 
 		if (cookieToken) {

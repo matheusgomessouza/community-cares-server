@@ -6,7 +6,7 @@ import {
 	createRefreshToken,
 	setRefreshCookie,
 } from "api/services/auth-tokens.js";
-import fetch, { RequestInit } from "node-fetch";
+import fetch, { type RequestInit } from "node-fetch";
 import { RefreshTokensRepository } from "api/repositories/refresh-tokens-repository.js";
 
 type OAuthTokenResponse = {

@@ -60,7 +60,6 @@ export class RefreshTokenController {
 			role: payload.role,
 		});
 
-		// Derive expiresAt for the new refresh token from its JWT exp claim
 		const newPayload = await verifyRefreshToken(newRefreshToken);
 		let expiresAt: number | undefined;
 		if (

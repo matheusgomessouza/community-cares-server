@@ -48,7 +48,7 @@ export function setRefreshCookie(res: Response, token: string) {
 	res.cookie("refresh", token, {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
-		sameSite: "strict",
+		sameSite: "none",
 		path: "/",
 		maxAge,
 	});
@@ -58,7 +58,7 @@ export function clearRefreshCookie(res: Response) {
 	res.clearCookie("refresh", {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
-		sameSite: "strict",
+		sameSite: "none",
 		path: "/",
 	});
 }

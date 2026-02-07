@@ -10,6 +10,7 @@ import adminUsersRouter from "api/routes/admin-users.js";
 import locationsRouter from "api/routes/locations.js";
 import pendingLocationsRouter from "api/routes/pending-locations.js";
 import authRouter from "api/routes/auth.js";
+import { envs } from "env.js";
 
 /**
  * @swagger
@@ -138,7 +139,7 @@ const port = 8088;
 app.use(bodyParser.json());
 app.use(
 	cors({
-		origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+		origin: envs.FRONTEND_ORIGIN || "http://localhost:3000",
 		credentials: true,
 	}),
 );

@@ -1,5 +1,6 @@
 import * as jose from "jose";
 import { Response } from "express";
+import { envs } from "env.js";
 
 const ACCESS_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_IN = "30d";
@@ -10,8 +11,7 @@ if (!rawAccessSecret) {
 }
 const accessSecret = new TextEncoder().encode(rawAccessSecret);
 
-const rawRefreshSecret =
-	process.env.REFRESH_SECRET_KEY || process.env.AUTH_SECRET_KEY;
+const rawRefreshSecret = envs.REFRESH_SECRET_KEY || process.env.AUTH_SECRET_KEY;
 if (!rawRefreshSecret) {
 	throw new Error(
 		"REFRESH_SECRET_KEY or AUTH_SECRET_KEY environment variable must be set",

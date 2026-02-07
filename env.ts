@@ -16,6 +16,8 @@ const baseSchema = z.object({
   GOOGLE_CLIENT_ID: z.string(),
   GOOGLE_REDIRECT_URI: z.url(),
   GOOGLE_SECRET: z.string(),
+  REFRESH_SECRET_KEY: z.string(),
+  FRONTEND_ORIGIN: z.string(),
 });
 
 const envSchema = environment === 'production'

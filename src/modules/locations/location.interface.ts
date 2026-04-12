@@ -9,14 +9,10 @@ export interface Location {
   };
 }
 
-export interface LocationUpdate {
+export interface LocationRecord extends Location {
   id: number;
-  name?: string;
-  type?: string;
-  address?: string;
-  contact?: string;
-  coords?: {
-    lat: number;
-    lng: number;
-  };
+}
+
+export interface LocationUpdate extends Partial<Location> {
+  id: number;
 }

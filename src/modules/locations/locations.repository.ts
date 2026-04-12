@@ -1,26 +1,41 @@
 import { Injectable } from '@nestjs/common';
-import { Locations, Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../infrastructure/prisma.service';
+import { Location, LocationRecord, LocationUpdate } from './location.interface';
+
+interface LocationsDelegate {
+  create(args: { data: Location }): Promise<LocationRecord>;
+  findMany(): Promise<LocationRecord[]>;
+  update(args: {
+    where: { id: number };
+    data: Partial<Location>;
+  }): Promise<LocationRecord>;
+}
 
 @Injectable()
 export class LocationsRepository {
-  constructor(private prisma: PrismaService) {}
-  async create(locationData: Prisma.LocationsCreateInput): Promise<Locations> {
-    return await this.prisma.locations.create({ data: locationData });
+  constructor(private readonly prisma: PrismaService) {}
+
+  private get locations(): LocationsDelegate {
+    const client = this.prisma.client as {
+      locations: LocationsDelegate;
+    };
+
+    return client.locations;
   }
 
-  async findAll(): Promise<Locations[]> {
-    return this.prisma.locations.findMany() as Promise<Locations[]>;
+  async create(locationData: Location): Promise<LocationRecord> {
+    return await this.locations.create({ data: locationData });
   }
 
-  async update(params: {
-    where: Prisma.LocationsWhereUniqueInput;
-    data: Prisma.LocationsUpdateInput;
-  }): Promise<Locations> {
-    const { where, data } = params;
-    return this.prisma.locations.update({
+  async findAll(): Promise<LocationRecord[]> {
+    return await this.locations.findMany();
+  }
+
+  async update(params: LocationUpdate): Promise<LocationRecord> {
+    const { id, ...data } = params;
+    return await this.locations.update({
+      where: { id },
       data,
-      where,
     });
   }
 }

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Body } from '@nestjs/common';
-import { Locations } from '../../generated/prisma/client';
 import { LocationsCreateDto } from './dtos/locations-create.dto';
+import { LocationRecord } from './location.interface';
 import { LocationsService } from './locations.service';
 import { LocationsUpdateDto } from './dtos/locations-update.dto';
 
@@ -9,21 +9,21 @@ export class LocationsController {
   constructor(private locationsService: LocationsService) {}
 
   @Get()
-  async getLocations(): Promise<Locations[]> {
+  async getLocations(): Promise<LocationRecord[]> {
     return this.locationsService.retrieve();
   }
 
   @Post()
   async createLocation(
     @Body() createLocationDto: LocationsCreateDto,
-  ): Promise<Locations> {
+  ): Promise<LocationRecord> {
     return this.locationsService.create(createLocationDto);
   }
 
   @Patch()
   async updateLocation(
     @Body() updateLocationDto: LocationsUpdateDto,
-  ): Promise<Locations> {
+  ): Promise<LocationRecord> {
     return this.locationsService.update(updateLocationDto);
   }
 }

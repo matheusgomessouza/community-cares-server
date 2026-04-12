@@ -7,6 +7,14 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+export class CoordsDto {
+  @IsNumber()
+  lat!: number;
+
+  @IsNumber()
+  lng!: number;
+}
+
 export class LocationsCreateDto {
   @ApiProperty({ description: 'Name of the location' })
   @IsNotEmpty()
@@ -35,12 +43,4 @@ export class LocationsCreateDto {
   @ValidateNested()
   @Type(() => CoordsDto)
   coords!: CoordsDto;
-}
-
-class CoordsDto {
-  @IsNumber()
-  lat!: number;
-
-  @IsNumber()
-  lng!: number;
 }

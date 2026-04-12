@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Body } from '@nestjs/common';
 import { LocationsCreateDto } from './dtos/locations-create.dto';
-import { LocationRecord } from './location.interface';
+import { LocationRecord } from './locations.interface';
 import { LocationsService } from './locations.service';
 import { LocationsUpdateDto } from './dtos/locations-update.dto';
 

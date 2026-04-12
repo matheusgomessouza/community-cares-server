@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/prisma.service';
-import { Location, LocationRecord, LocationUpdate } from './location.interface';
+import {
+  Location,
+  LocationRecord,
+  LocationUpdate,
+} from './locations.interface';
 
 interface LocationsDelegate {
   create(args: { data: Location }): Promise<LocationRecord>;

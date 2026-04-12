@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Location, LocationRecord, LocationUpdate } from './location.interface';
+import {
+  Location,
+  LocationRecord,
+  LocationUpdate,
+} from './locations.interface';
 import { LocationsRepository } from './locations.repository';
 
 @Injectable()

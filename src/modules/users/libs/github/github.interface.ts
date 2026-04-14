@@ -1,5 +1,5 @@
 export interface GitHubExchangeCodeBodyProps {
   code: string;
-  code_verifier: string;
+  code_verifier?: string;
   env: string;
 }

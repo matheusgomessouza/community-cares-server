@@ -1,10 +1,11 @@
-import { Controller, Body } from '@nestjs/common';
+import { Controller, Body, Post } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UserGitHubEmailResponseDto } from './dtos/user-github-email-response.dto';
 import { UserGitHubResponseDto } from './dtos/user-github-response.dto';
-// import { UserGitHubAuthenticateDto } from '../dtos/user-github-authenticate.dto';
+import { UserGitHubAuthenticateDto } from './dtos/user-github-authenticate.dto';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
-// @ApiTags('users')
+@ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private usersService: UsersService) {}
@@ -89,13 +90,13 @@ export class UsersController {
     };
   }
 
-  // @Post()
-  // @ApiResponse({ status: 200, description: 'OAuth authentication successful' })
-  // @ApiResponse({ status: 400, description: 'Invalid request body' })
-  // @ApiResponse({ status: 500, description: 'Failed to exchange code' })
-  // authenticateWithGitHub(
-  //   @Body() userGitHubAuthenticateDto: UserGitHubAuthenticateDto,
-  // ) {
-  //   return this.usersService.authenticateWithGitHub(userGitHubAuthenticateDto);
-  // }
+  @Post()
+  @ApiResponse({ status: 200, description: 'OAuth authentication successful' })
+  @ApiResponse({ status: 400, description: 'Invalid request body' })
+  @ApiResponse({ status: 500, description: 'Failed to exchange code' })
+  authenticateWithGitHub(
+    @Body() userGitHubAuthenticateDto: UserGitHubAuthenticateDto,
+  ) {
+    return this.usersService.authenticateWithGitHub(userGitHubAuthenticateDto);
+  }
 }

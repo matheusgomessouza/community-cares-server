@@ -20,7 +20,12 @@
     "vscode": {
       "extensions": ["GitHub.copilot"],
 			"settings": {
-				"terminal.integrated.shell.linux": "/bin/bash"
+				"terminal.integrated.defaultProfile.linux": "bash",
+				"terminal.integrated.profiles.linux": {
+					"bash": {
+						"path": "/bin/bash"
+					}
+				}
 			}
     }
   }

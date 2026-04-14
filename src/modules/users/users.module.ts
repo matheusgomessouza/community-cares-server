@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { UsersController } from './controllers/users.controller';
-import { UsersService } from './services/users.service';
-import { HttpService } from '@nestjs/axios';
-// import {} from "./repositories/user.repository"
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+import { HttpModule } from '@nestjs/axios';
+import { GitHubService } from './libs/github/github.service';
 
 @Module({
-  imports: [HttpService],
+  imports: [HttpModule],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, GitHubService],
 })
 export class UsersModule {}

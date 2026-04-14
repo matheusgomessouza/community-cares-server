@@ -1,5 +1,5 @@
 export class UserGitHubResponseDto {
-  id: number | string;
+  id!: number | string;
   name?: string | null;
   login?: string | null;
   avatar_url?: string | null;

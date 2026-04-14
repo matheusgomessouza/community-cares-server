@@ -1,7 +1,7 @@
 import { Controller, Body } from '@nestjs/common';
-import { UsersService } from '../services/users.service';
-import { UserGitHubEmailResponseDto } from '../dtos/user-github-email-response.dto';
-import { UserGitHubResponseDto } from '../dtos/user-github-response.dto';
+import { UsersService } from './users.service';
+import { UserGitHubEmailResponseDto } from './dtos/user-github-email-response.dto';
+import { UserGitHubResponseDto } from './dtos/user-github-response.dto';
 // import { UserGitHubAuthenticateDto } from '../dtos/user-github-authenticate.dto';
 
 // @ApiTags('users')

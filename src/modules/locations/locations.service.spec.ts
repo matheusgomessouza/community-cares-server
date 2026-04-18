@@ -52,7 +52,7 @@ describe('LocationsService', () => {
     it('should call LocationsRepository.findAll and return array of records', async () => {
       const result = await service.retrieve();
 
-      expect(jest.spyOn(repository, 'findAll')).toHaveBeenCalledTimes(1);
+      expect(repository.findAll).toHaveBeenCalledTimes(1);
       expect(result).toEqual([mockLocationRecord]);
     });
   });
@@ -69,10 +69,8 @@ describe('LocationsService', () => {
 
       const result = await service.create(newLocation);
 
-      expect(jest.spyOn(repository, 'create')).toHaveBeenCalledWith(
-        newLocation,
-      );
-      expect(jest.spyOn(repository, 'create')).toHaveBeenCalledTimes(1);
+      expect(repository.create).toHaveBeenCalledWith(newLocation);
+      expect(repository.create).toHaveBeenCalledTimes(1);
       expect(result).toEqual(mockLocationRecord);
     });
   });
@@ -86,8 +84,8 @@ describe('LocationsService', () => {
 
       const result = await service.update(updateData);
 
-      expect(jest.spyOn(repository, 'update')).toHaveBeenCalledWith(updateData);
-      expect(jest.spyOn(repository, 'update')).toHaveBeenCalledTimes(1);
+      expect(repository.update).toHaveBeenCalledWith(updateData);
+      expect(repository.update).toHaveBeenCalledTimes(1);
       expect(result).toEqual({
         ...mockLocationRecord,
         name: 'Service Updated Location',

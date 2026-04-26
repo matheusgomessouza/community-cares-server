@@ -1,74 +1,98 @@
-# community-cares-server
-Community Cares server
-**👨‍💻 Tecnologias / Technologies**
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-Esse projeto foi desenvolvido com as seguintes tecnologias / This project was developed with the following technologies:
-- [Node.js](https://nodejs.org/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [ExpressJS](https://expressjs.com/)
-- [Prisma ORM](https://www.prisma.io/)
-- [Vitest](https://vitest.dev/)
-- [Husky](https://typicode.github.io/husky/)
-- [Axios](https://axios-http.com/)
-- [Docker](https://www.docker.com/)
-- [Docker Compose](https://docs.docker.com/compose/)
-- [Swagger](https://swagger.io/)
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-**✨ Funcionalidades / Features**
+## Description
 
-- API REST para gerenciar pontos de doação de alimentos (CRUD) / REST API to manage giveaway food locations (CRUD)
-- Persistência de dados com Prisma / Data persistence with Prisma
-- Endpoint de health-check / Health-check endpoint
-- Integração com HTTP client (Axios) / HTTP client integration (Axios)
-- Testes unitários com Vitest / Unit testing with Vitest
-- Hooks de Git com Husky / Git hooks with Husky
-- Configuração por variáveis de ambiente (.env) / Environment-based configuration (.env)
-- Opcional: execução em contêiner com Docker / Optional: containerized run with Docker
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+## Project setup
 
-**💻 Projeto / Project**
+```bash
+$ npm install
+```
 
-Community Cares is an app that helps people find free giveaway food locations to help people in need 🧡
+## Compile and run the project
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+```bash
+# development
+$ npm run start
 
-**🚀 Como executar / How to run**
+# watch mode
+$ npm run start:dev
 
-Pré-requisitos / Prerequisites:
-- Node.js e npm instalados OU Docker e Docker Compose / Node.js and npm installed OR Docker and Docker Compose
-- Arquivo .env com as variáveis necessárias (por exemplo: DATABASE_URL, PORT) / .env file with required variables (e.g., DATABASE_URL, PORT)
+# production mode
+$ npm run start:prod
+```
 
-Exemplo de .env / .env example (ajuste conforme seu banco) / adjust to your database:
-- SQLite: DATABASE_URL="file:./dev.db"
-- PostgreSQL: DATABASE_URL="postgresql://user:password@localhost:5432/community_cares?schema=public"
+## Run tests
 
-Execução local / Local run:
-- Clone o repositório / Clone the repository
-- Instale as dependências com `npm i` / Install dependencies with `npm i`
-- Gere o cliente do Prisma com `npx prisma generate` / Generate Prisma client with `npx prisma generate`
-- Rode as migrações com `npx prisma migrate dev --name init` / Run migrations with `npx prisma migrate dev --name init`
-- Inicie o servidor com `npm run start:dev` / Start the server with `npm run start:dev`
+```bash
+# unit tests
+$ npm run test
 
-Testes / Tests:
-- Execute `npx vitest` ou `npm test` / Run `npx vitest` or `npm test`
+# e2e tests
+$ npm run test:e2e
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# test coverage
+$ npm run test:cov
+```
 
-**🐳 Execução com Docker / Run with Docker**
+## Deployment
 
-- Certifique-se de ter Docker e Docker Compose instalados / Ensure Docker and Docker Compose are installed
-- Configure o .env (especialmente DATABASE_URL apontando para o serviço do banco no Compose) / Configure .env (especially DATABASE_URL pointing to the DB service in Compose)
-- Suba os serviços com `docker compose up -d` (se houver docker-compose.yml) / Bring services up with `docker compose up -d` (if docker-compose.yml is present)
-- Alternativa sem Compose: `docker build -t community-cares-server .` e `docker run -p 3333:3333 --env-file .env community-cares-server` / Alternative without Compose: `docker build -t community-cares-server .` and `docker run -p 3333:3333 --env-file .env community-cares-server`
-- Guia de configuração Docker (artigo) / Docker config guide (article): https://matheus-docs.notion.site/Leveraging-Docker-VS-Code-Dev-Containers-during-local-development-8b43483454574dceb23f0b0dba0505fc
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
-**🧑🏾‍💻 Autor / Author**
+```bash
+$ npm install -g @nestjs/mau
+$ mau deploy
+```
 
-Matheus Gomes de Souza  
-LinkedIn: https://www.linkedin.com/in/matheus-gomes-de-souza/  
-E-mail: matheusg_souza@outlook.com
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+
+## Resources
+
+Check out a few resources that may come in handy when working with NestJS:
+
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+
+## Support
+
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+
+## Stay in touch
+
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

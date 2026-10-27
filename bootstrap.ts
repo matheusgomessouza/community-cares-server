@@ -3,14 +3,9 @@ import { GoogleAuth } from "google-auth-library";
 const PROJECT_ID = "secrets-manager-494502";
 const PREFIX = "ccs-";
 const SCOPES = ["https://www.googleapis.com/auth/cloud-platform"];
+const TIMEOUT_MS = 8000;
 
-/**
- * These secrets are read while other modules evaluate: `env.ts` parses them on
- * import, `services/auth-tokens.ts` builds its signing keys on import, and the
- * repositories call `new PrismaClient()` on import. They must be in
- * `process.env` before any of that runs, which is why this file is the first
- * import of `api/index.ts`.
- */
+/** Secrets the app reads on import. See `server.ts` for the load order. */
 const SECRET_NAMES = [
 	"AUTH_SECRET_KEY",
 	"REFRESH_SECRET_KEY",
@@ -24,13 +19,23 @@ function buildAuth(): GoogleAuth {
 	const inline = process.env.GCP_SA_KEY;
 
 	if (inline) {
-		return new GoogleAuth({ credentials: JSON.parse(inline), scopes: SCOPES });
+		let credentials: Record<string, unknown>;
+
+		try {
+			credentials = JSON.parse(inline) as Record<string, unknown>;
+		} catch {
+			// A SyntaxError message quotes the input back. The input here is a
+			// private key, so the message would put key material in the log.
+			throw new Error("GCP_SA_KEY is not valid JSON");
+		}
+
+		return new GoogleAuth({ credentials, scopes: SCOPES });
 	}
 
 	// Render has no OIDC federation on the free plan, so the service account
 	// key is mounted as a file and found through Application Default
-	// Credentials. GCP-hosted runtimes would get here with a metadata token and
-	// need no key at all.
+	// Credentials. A GCP-hosted runtime gets here with a metadata token and
+	// needs no key at all.
 	return new GoogleAuth({ scopes: SCOPES });
 }
 
@@ -39,9 +44,20 @@ async function readSecret(name: string, token: string): Promise<string> {
 		`https://secretmanager.googleapis.com/v1/projects/${PROJECT_ID}` +
 		`/secrets/${PREFIX}${name}/versions/latest:access`;
 
-	const response = await fetch(url, {
-		headers: { Authorization: `Bearer ${token}` },
-	});
+	let response: Response;
+
+	try {
+		response = await fetch(url, {
+			headers: { Authorization: `Bearer ${token}` },
+			signal: AbortSignal.timeout(TIMEOUT_MS),
+		});
+	} catch {
+		// Without the timeout a stalled connection hangs the boot forever and
+		// writes nothing to the log.
+		throw new Error(
+			`Secret Manager did not answer within ${TIMEOUT_MS} ms for ${PREFIX}${name}`,
+		);
+	}
 
 	if (!response.ok) {
 		throw new Error(
@@ -82,10 +98,4 @@ export async function loadSecrets(): Promise<void> {
 
 		process.env[name] = value;
 	}
-}
-
-// Local runs read `.env.local` through `dotenv`, so only production pays for
-// the Secret Manager round trip.
-if (process.env.NODE_ENV === "production") {
-	await loadSecrets();
 }

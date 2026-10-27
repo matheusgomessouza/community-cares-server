@@ -5,12 +5,12 @@
 	"description": "Server for the Community Cares application",
 	"main": "index.ts",
 	"scripts": {
-		"start": "tsx api/index.ts",
-		"start:dev": "tsx watch api/index.ts dotenv -e .env.local",
+		"start": "tsx server.ts",
+		"start:dev": "tsx watch server.ts dotenv -e .env.local",
 		"migrate": "npx prisma migrate deploy",
 		"test": "vitest run",
 		"coverage": "vitest run --coverage",
-		"lint": "npx eslint api/**/*.ts",
+		"lint": "npx eslint bootstrap.ts server.ts api/**/*.ts",
 		"pretty": "prettier --write 'api/**/*.ts'",
 		"prepare": "husky"
 	},

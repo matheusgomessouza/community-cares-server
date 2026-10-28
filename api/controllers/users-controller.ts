@@ -193,9 +193,11 @@ export class UsersController {
 				});
 			}
 		} catch (error: unknown) {
+			// The message can carry the upstream response and the client id.
+			// Keep it in the log and return a fixed message to the caller.
 			console.error("Error exchanging code for token:", error);
 			return res.status(500).json({
-				message: error instanceof Error ? error.message : String(error),
+				message: "Failed to exchange the GitHub code",
 			});
 		}
 	}

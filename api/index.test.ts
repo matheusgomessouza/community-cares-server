@@ -259,6 +259,9 @@ describe("POST /authenticate", () => {
 			.send({ code: "bad-code", env: "dev" });
 
 		expect(res.status).toBe(500);
+		expect(res.body).toEqual({
+			message: "Failed to exchange the GitHub code",
+		});
 		expect(exchangeCodeGithub).toHaveBeenCalled();
 	});
 });

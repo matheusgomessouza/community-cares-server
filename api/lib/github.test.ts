@@ -57,6 +57,17 @@ describe("exchangeCodeGithub", () => {
 		expect(params.get("client_secret")).toBe("prd-client-secret");
 	});
 
+	it("uses the web development app outside production", async () => {
+		process.env.NODE_ENV = "test";
+		reply(200, { access_token: "token" });
+
+		await exchangeCodeGithub("code", "", "web");
+
+		const params = sentParams();
+		expect(params.get("client_id")).toBe("web-dev-client-id");
+		expect(params.get("client_secret")).toBe("web-dev-client-secret");
+	});
+
 	it("uses the mobile app when env is not web", async () => {
 		process.env.NODE_ENV = "production";
 		reply(200, { access_token: "token" });

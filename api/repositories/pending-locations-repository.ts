@@ -22,6 +22,7 @@ export class PendingLocationsRepository {
 			latitude: number;
 			longitude: number;
 		},
+		image_url?: string,
 	) {
 		await prisma.pendingLocations.create({
 			data: {
@@ -30,6 +31,7 @@ export class PendingLocationsRepository {
 				address,
 				contact,
 				coords,
+				image_url,
 			},
 		});
 	}

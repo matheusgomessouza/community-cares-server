@@ -7,6 +7,7 @@ export class PendingLocationsCreateService {
 		address: string,
 		contact: string,
 		coords: { latitude: number; longitude: number },
+		image_url?: string,
 	) {
 		try {
 			const pendingLocationsRepository = new PendingLocationsRepository();
@@ -18,6 +19,7 @@ export class PendingLocationsCreateService {
 					address,
 					contact,
 					coords,
+					image_url,
 				);
 
 			return {

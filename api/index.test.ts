@@ -48,6 +48,8 @@ const hoisted = vi.hoisted(() => ({
 			address: "789 Rd",
 			contact: "555-0003",
 			coords: { lat: 5, lng: 6 },
+			image_url:
+				"https://bucket.s3.sa-east-1.amazonaws.com/locations/a.webp",
 		},
 		{
 			id: 11,
@@ -56,13 +58,19 @@ const hoisted = vi.hoisted(() => ({
 			address: "101 Blvd",
 			contact: "555-0004",
 			coords: { lat: 7, lng: 8 },
+			image_url: null,
 		},
 	],
 	pendingFindMany: vi.fn(),
+	pendingCreate: vi.fn(),
 	findUnique: vi.fn(),
 	pendingDelete: vi.fn(),
 	jwtVerify: vi.fn(),
 	fetch: vi.fn(),
+	uploadImage: vi.fn(),
+	validateGithubToken: vi.fn(),
+	validateGoogleToken: vi.fn(),
+	verifyRefreshToken: vi.fn(),
 }));
 
 vi.mock("env.js", () => ({
@@ -76,6 +84,12 @@ vi.mock("env.js", () => ({
 		GOOGLE_CLIENT_ID: "test-google-id",
 		GOOGLE_REDIRECT_URI: "http://localhost:3000",
 		GOOGLE_SECRET: "test-google-secret",
+		FRONTEND_ORIGIN: "http://localhost:3000",
+		AWS_REGION: "sa-east-1",
+		AWS_ACCESS_KEY_ID: "test-key-id",
+		AWS_SECRET_ACCESS_KEY: "test-secret",
+		S3_BUCKET: "test-bucket",
+		S3_PUBLIC_BASE_URL: "https://test-bucket.s3.sa-east-1.amazonaws.com",
 	},
 }));
 
@@ -83,6 +97,17 @@ vi.mock("api/lib/github.js", () => {
 	return { exchangeCodeGithub: vi.fn() };
 });
 vi.mock("api/lib/google.js", () => ({ exchangeCodeGoogle: vi.fn() }));
+
+vi.mock("api/middleware/token-validation.js", () => ({
+	validateGithubToken: hoisted.validateGithubToken,
+	validateGoogleToken: hoisted.validateGoogleToken,
+}));
+
+vi.mock("api/services/storage/s3.js", () => ({
+	S3StorageService: class {
+		uploadImage = hoisted.uploadImage;
+	},
+}));
 
 vi.mock("jose", async (importOriginal) => {
 	const mod = await importOriginal<typeof jose>();
@@ -97,6 +122,7 @@ vi.mock("@prisma/client", () => {
 		mockLocations,
 		mockPendingLocations,
 		pendingFindMany,
+		pendingCreate,
 		findUnique,
 		pendingDelete,
 	} = hoisted;
@@ -111,6 +137,7 @@ vi.mock("@prisma/client", () => {
 			};
 			pendingLocations = {
 				findMany: pendingFindMany,
+				create: pendingCreate,
 				delete: pendingDelete,
 			};
 		},
@@ -135,12 +162,14 @@ vi.mock("api/services/auth-tokens.js", () => ({
 	createAccessToken: vi.fn().mockResolvedValue("mock-access-token"),
 	createRefreshToken: vi.fn().mockResolvedValue("mock-refresh-token"),
 	setRefreshCookie: vi.fn(),
+	verifyRefreshToken: hoisted.verifyRefreshToken,
 }));
 
 // Mock refresh tokens repository
 vi.mock("api/repositories/refresh-tokens-repository.js", () => ({
 	RefreshTokensRepository: class {
 		save = vi.fn().mockResolvedValue(undefined);
+		isRevoked = vi.fn().mockResolvedValue(false);
 	},
 }));
 
@@ -483,5 +512,269 @@ describe("DELETE /pending-location/:id", () => {
 
 		expect(res.status).toBe(500);
 		expect(consoleErrorSpy).toHaveBeenCalled();
+	});
+});
+
+const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+const WEBP = Buffer.from([
+	0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+]);
+
+describe("POST /uploads", () => {
+	it("returns 401 without a Bearer token", async () => {
+		const res = await request(app).post("/uploads");
+
+		expect(res.status).toBe(401);
+		expect(res.body).toEqual({ message: "Unauthorized" });
+	});
+
+	it("returns 400 when the provider is missing", async () => {
+		const res = await request(app)
+			.post("/uploads")
+			.set("Authorization", "Bearer token")
+			.attach("image", JPEG, "photo.jpg");
+
+		expect(res.status).toBe(400);
+		expect(res.body).toEqual({
+			message: "Error: provider must be github or google.",
+		});
+	});
+
+	it("returns 400 when the file is not an image", async () => {
+		const res = await request(app)
+			.post("/uploads")
+			.set("Authorization", "Bearer token")
+			.field("provider", "github")
+			.attach("image", Buffer.from("not an image"), "photo.txt");
+
+		expect(res.status).toBe(400);
+		expect(res.body).toEqual({
+			message: "Error: image must be JPEG, PNG or WEBP.",
+		});
+	});
+
+	it("returns 400 when the file is above 10 MB", async () => {
+		const res = await request(app)
+			.post("/uploads")
+			.set("Authorization", "Bearer token")
+			.field("provider", "github")
+			.attach("image", Buffer.alloc(10 * 1024 * 1024 + 1), "photo.jpg");
+
+		expect(res.status).toBe(400);
+		expect(res.body).toEqual({
+			message: "Error: image must be 10 MB or smaller.",
+		});
+	});
+
+	it("returns 401 when the token is not valid", async () => {
+		hoisted.validateGithubToken.mockResolvedValue(401);
+
+		const res = await request(app)
+			.post("/uploads")
+			.set("Authorization", "Bearer expired")
+			.field("provider", "github")
+			.attach("image", JPEG, "photo.jpg");
+
+		expect(res.status).toBe(401);
+		expect(res.body).toEqual({
+			message: "Error: could not upload the image. | Token expired",
+		});
+	});
+
+	it("returns 201 and the public URL from the storage service", async () => {
+		hoisted.validateGithubToken.mockResolvedValue(200);
+		hoisted.uploadImage.mockResolvedValue(
+			"https://test-bucket.s3.sa-east-1.amazonaws.com/locations/new.webp",
+		);
+
+		const res = await request(app)
+			.post("/uploads")
+			.set("Authorization", "Bearer token")
+			.field("provider", "github")
+			.attach("image", WEBP, {
+				filename: "photo.webp",
+				contentType: "image/webp",
+			});
+
+		expect(res.status).toBe(201);
+		expect(res.body).toEqual({
+			url: "https://test-bucket.s3.sa-east-1.amazonaws.com/locations/new.webp",
+		});
+		expect(hoisted.uploadImage).toHaveBeenCalledWith({
+			buffer: WEBP,
+			extension: "webp",
+			contentType: "image/webp",
+		});
+	});
+
+	it("uses the Google validator for the google provider", async () => {
+		hoisted.validateGoogleToken.mockResolvedValue(200);
+		hoisted.uploadImage.mockResolvedValue("https://bucket/locations/a.jpg");
+
+		const res = await request(app)
+			.post("/uploads")
+			.set("Authorization", "Bearer google-token")
+			.field("provider", "google")
+			.attach("image", JPEG, "photo.jpg");
+
+		expect(res.status).toBe(201);
+		expect(hoisted.validateGoogleToken).toHaveBeenCalledWith(
+			"google-token",
+		);
+	});
+
+	it("accepts the refresh cookie without a Bearer token", async () => {
+		hoisted.verifyRefreshToken.mockResolvedValue({ sub: "github:1" });
+		hoisted.uploadImage.mockResolvedValue(
+			"https://bucket/locations/cookie.jpg",
+		);
+
+		const res = await request(app)
+			.post("/uploads")
+			.set("Cookie", "refresh=session-token")
+			.attach("image", JPEG, "photo.jpg");
+
+		expect(res.status).toBe(201);
+		expect(res.body).toEqual({
+			url: "https://bucket/locations/cookie.jpg",
+		});
+	});
+
+	it("returns 401 when the refresh cookie is invalid", async () => {
+		hoisted.verifyRefreshToken.mockResolvedValue(null);
+
+		const res = await request(app)
+			.post("/uploads")
+			.set("Cookie", "refresh=bad-token")
+			.attach("image", JPEG, "photo.jpg");
+
+		expect(res.status).toBe(401);
+		expect(res.body).toEqual({ message: "Unauthorized" });
+	});
+
+	it("returns 500 when S3 rejects the upload", async () => {
+		hoisted.validateGithubToken.mockResolvedValue(200);
+		hoisted.uploadImage.mockRejectedValue(new Error("AccessDenied"));
+
+		const res = await request(app)
+			.post("/uploads")
+			.set("Authorization", "Bearer token")
+			.field("provider", "github")
+			.attach("image", JPEG, "photo.jpg");
+
+		expect(res.status).toBe(500);
+		expect(res.body).toEqual({
+			message: "Error: could not upload the image.",
+		});
+	});
+});
+
+describe("POST /pending-locations", () => {
+	it("stores the image_url with the pending location", async () => {
+		hoisted.validateGithubToken.mockResolvedValue(200);
+		hoisted.pendingCreate.mockResolvedValue({});
+
+		const res = await request(app)
+			.post("/pending-locations")
+			.set("Authorization", "Bearer token")
+			.send({
+				name: "Place",
+				type: "park",
+				address: "1 St",
+				contact: "555",
+				coords: { latitude: 1, longitude: 2 },
+				provider: "github",
+				image_url:
+					"https://test-bucket.s3.sa-east-1.amazonaws.com/locations/a.webp",
+			});
+
+		expect(res.status).toBe(200);
+		expect(hoisted.pendingCreate).toHaveBeenCalledWith({
+			data: {
+				name: "Place",
+				type: "park",
+				address: "1 St",
+				contact: "555",
+				coords: { latitude: 1, longitude: 2 },
+				image_url:
+					"https://test-bucket.s3.sa-east-1.amazonaws.com/locations/a.webp",
+			},
+		});
+	});
+
+	it("returns 400 when the image_url does not come from the bucket", async () => {
+		const res = await request(app)
+			.post("/pending-locations")
+			.set("Authorization", "Bearer token")
+			.send({
+				name: "Place",
+				type: "park",
+				address: "1 St",
+				contact: "555",
+				coords: { latitude: 1, longitude: 2 },
+				provider: "github",
+				image_url: "https://evil.example/locations/a.webp",
+			});
+
+		expect(res.status).toBe(400);
+		expect(res.body).toEqual({
+			message: "Error: image_url must come from POST /uploads.",
+		});
+		expect(hoisted.pendingCreate).not.toHaveBeenCalled();
+	});
+
+	it("stores no image_url when the client sends none", async () => {
+		hoisted.validateGithubToken.mockResolvedValue(200);
+		hoisted.pendingCreate.mockResolvedValue({});
+
+		const res = await request(app)
+			.post("/pending-locations")
+			.set("Authorization", "Bearer token")
+			.send({
+				name: "Place",
+				type: "park",
+				address: "1 St",
+				contact: "555",
+				coords: { latitude: 1, longitude: 2 },
+				provider: "github",
+			});
+
+		expect(res.status).toBe(200);
+		expect(hoisted.pendingCreate).toHaveBeenCalledWith({
+			data: {
+				name: "Place",
+				type: "park",
+				address: "1 St",
+				contact: "555",
+				coords: { latitude: 1, longitude: 2 },
+				image_url: undefined,
+			},
+		});
+	});
+
+	it("accepts the refresh cookie without a Bearer token", async () => {
+		hoisted.verifyRefreshToken.mockResolvedValue({ sub: "github:1" });
+		hoisted.pendingCreate.mockResolvedValue({});
+
+		const res = await request(app)
+			.post("/pending-locations")
+			.set("Cookie", "refresh=session-token")
+			.send({
+				name: "Place",
+				type: "park",
+				address: "1 St",
+				contact: "555",
+				coords: { latitude: 1, longitude: 2 },
+				image_url:
+					"https://test-bucket.s3.sa-east-1.amazonaws.com/locations/a.webp",
+			});
+
+		expect(res.status).toBe(200);
+		expect(hoisted.pendingCreate).toHaveBeenCalledWith({
+			data: expect.objectContaining({
+				image_url:
+					"https://test-bucket.s3.sa-east-1.amazonaws.com/locations/a.webp",
+			}),
+		});
 	});
 });

@@ -33,10 +33,10 @@ router.get("/", async (req: Request, res: Response) => {
  *     parameters:
  *       - in: header
  *         name: Authorization
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
- *         description: Bearer token from GitHub or Google
+ *         description: Bearer token from GitHub or Google. Omit it to use the session cookie.
  *     requestBody:
  *       required: true
  *       content:

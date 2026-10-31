@@ -54,17 +54,17 @@ function parseImage(req: Request, res: Response, next: NextFunction) {
  *     parameters:
  *       - in: header
  *         name: Authorization
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
- *         description: Bearer token from GitHub or Google
+ *         description: Bearer token from GitHub or Google. Omit it to use the session cookie.
  *     requestBody:
  *       required: true
  *       content:
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required: [image, provider]
+ *             required: [image]
  *             properties:
  *               image:
  *                 type: string
@@ -72,6 +72,7 @@ function parseImage(req: Request, res: Response, next: NextFunction) {
  *               provider:
  *                 type: string
  *                 enum: [github, google]
+ *                 description: Required only with a Bearer token.
  *     responses:
  *       201:
  *         description: The public URL of the stored image.

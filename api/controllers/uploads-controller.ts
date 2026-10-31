@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { detectImageType } from "api/lib/image.js";
+import { getBearerToken, hasValidSession } from "api/lib/session.js";
 import {
 	validateGithubToken,
 	validateGoogleToken,
@@ -12,14 +13,6 @@ export class UploadsController {
 	) {}
 
 	async uploadImage(req: Request, res: Response) {
-		const { provider } = req.body ?? {};
-
-		if (provider !== "github" && provider !== "google") {
-			return res.status(400).json({
-				message: "Error: provider must be github or google.",
-			});
-		}
-
 		const file = req.file;
 
 		if (!file) {
@@ -36,24 +29,33 @@ export class UploadsController {
 			});
 		}
 
-		if (
-			!req.headers.authorization ||
-			!req.headers.authorization.startsWith("Bearer ")
-		) {
+		const access_token = getBearerToken(req);
+		const hasSession = access_token ? false : await hasValidSession(req);
+
+		if (!access_token && !hasSession) {
 			return res.status(401).json({ message: "Unauthorized" });
 		}
 
-		const access_token = req.headers.authorization.split(" ")[1];
+		if (access_token) {
+			const { provider } = req.body ?? {};
 
-		const tokenValidity =
-			provider === "github"
-				? await validateGithubToken(access_token)
-				: await validateGoogleToken(access_token);
+			if (provider !== "github" && provider !== "google") {
+				return res.status(400).json({
+					message: "Error: provider must be github or google.",
+				});
+			}
 
-		if (tokenValidity !== 200) {
-			return res.status(401).json({
-				message: "Error: could not upload the image. | Token expired",
-			});
+			const tokenValidity =
+				provider === "github"
+					? await validateGithubToken(access_token)
+					: await validateGoogleToken(access_token);
+
+			if (tokenValidity !== 200) {
+				return res.status(401).json({
+					message:
+						"Error: could not upload the image. | Token expired",
+				});
+			}
 		}
 
 		try {

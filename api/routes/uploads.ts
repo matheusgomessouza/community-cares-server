@@ -13,11 +13,11 @@ const upload = multer({
 });
 
 /**
- * Reject a request without a Bearer token before multer buffers the file. The
- * token itself is checked in the controller, after the multipart parse.
+ * Reject a request with no credential before multer buffers the file. The
+ * token or the session cookie is checked in the controller, after the parse.
  */
-function requireBearerToken(req: Request, res: Response, next: NextFunction) {
-	if (!req.headers.authorization?.startsWith("Bearer ")) {
+function requireCredentials(req: Request, res: Response, next: NextFunction) {
+	if (!req.headers.authorization && !req.headers.cookie) {
 		return res.status(401).json({ message: "Unauthorized" });
 	}
 
@@ -91,7 +91,7 @@ function parseImage(req: Request, res: Response, next: NextFunction) {
  */
 router.post(
 	"/",
-	requireBearerToken,
+	requireCredentials,
 	parseImage,
 	async (req: Request, res: Response) => {
 		await uploadsController.uploadImage(req, res);

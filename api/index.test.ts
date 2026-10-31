@@ -70,6 +70,7 @@ const hoisted = vi.hoisted(() => ({
 	uploadImage: vi.fn(),
 	validateGithubToken: vi.fn(),
 	validateGoogleToken: vi.fn(),
+	verifyRefreshToken: vi.fn(),
 }));
 
 vi.mock("env.js", () => ({
@@ -161,12 +162,14 @@ vi.mock("api/services/auth-tokens.js", () => ({
 	createAccessToken: vi.fn().mockResolvedValue("mock-access-token"),
 	createRefreshToken: vi.fn().mockResolvedValue("mock-refresh-token"),
 	setRefreshCookie: vi.fn(),
+	verifyRefreshToken: hoisted.verifyRefreshToken,
 }));
 
 // Mock refresh tokens repository
 vi.mock("api/repositories/refresh-tokens-repository.js", () => ({
 	RefreshTokensRepository: class {
 		save = vi.fn().mockResolvedValue(undefined);
+		isRevoked = vi.fn().mockResolvedValue(false);
 	},
 }));
 
@@ -620,6 +623,35 @@ describe("POST /uploads", () => {
 		);
 	});
 
+	it("accepts the refresh cookie without a Bearer token", async () => {
+		hoisted.verifyRefreshToken.mockResolvedValue({ sub: "github:1" });
+		hoisted.uploadImage.mockResolvedValue(
+			"https://bucket/locations/cookie.jpg",
+		);
+
+		const res = await request(app)
+			.post("/uploads")
+			.set("Cookie", "refresh=session-token")
+			.attach("image", JPEG, "photo.jpg");
+
+		expect(res.status).toBe(201);
+		expect(res.body).toEqual({
+			url: "https://bucket/locations/cookie.jpg",
+		});
+	});
+
+	it("returns 401 when the refresh cookie is invalid", async () => {
+		hoisted.verifyRefreshToken.mockResolvedValue(null);
+
+		const res = await request(app)
+			.post("/uploads")
+			.set("Cookie", "refresh=bad-token")
+			.attach("image", JPEG, "photo.jpg");
+
+		expect(res.status).toBe(401);
+		expect(res.body).toEqual({ message: "Unauthorized" });
+	});
+
 	it("returns 500 when S3 rejects the upload", async () => {
 		hoisted.validateGithubToken.mockResolvedValue(200);
 		hoisted.uploadImage.mockRejectedValue(new Error("AccessDenied"));
@@ -717,6 +749,32 @@ describe("POST /pending-locations", () => {
 				coords: { latitude: 1, longitude: 2 },
 				image_url: undefined,
 			},
+		});
+	});
+
+	it("accepts the refresh cookie without a Bearer token", async () => {
+		hoisted.verifyRefreshToken.mockResolvedValue({ sub: "github:1" });
+		hoisted.pendingCreate.mockResolvedValue({});
+
+		const res = await request(app)
+			.post("/pending-locations")
+			.set("Cookie", "refresh=session-token")
+			.send({
+				name: "Place",
+				type: "park",
+				address: "1 St",
+				contact: "555",
+				coords: { latitude: 1, longitude: 2 },
+				image_url:
+					"https://test-bucket.s3.sa-east-1.amazonaws.com/locations/a.webp",
+			});
+
+		expect(res.status).toBe(200);
+		expect(hoisted.pendingCreate).toHaveBeenCalledWith({
+			data: expect.objectContaining({
+				image_url:
+					"https://test-bucket.s3.sa-east-1.amazonaws.com/locations/a.webp",
+			}),
 		});
 	});
 });

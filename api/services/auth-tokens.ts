@@ -45,20 +45,23 @@ export async function verifyRefreshToken(token: string) {
 
 export function setRefreshCookie(res: Response, token: string) {
 	const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+	const isProduction = process.env.NODE_ENV === "production";
 	res.cookie("refresh", token, {
 		httpOnly: true,
-		secure: process.env.NODE_ENV === "production",
-		sameSite: "none",
+		secure: isProduction,
+		// SameSite=None needs Secure, so local http keeps Lax.
+		sameSite: isProduction ? "none" : "lax",
 		path: "/",
 		maxAge,
 	});
 }
 
 export function clearRefreshCookie(res: Response) {
+	const isProduction = process.env.NODE_ENV === "production";
 	res.clearCookie("refresh", {
 		httpOnly: true,
-		secure: process.env.NODE_ENV === "production",
-		sameSite: "none",
+		secure: isProduction,
+		sameSite: isProduction ? "none" : "lax",
 		path: "/",
 	});
 }

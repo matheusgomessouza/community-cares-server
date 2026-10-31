@@ -4,6 +4,7 @@ import {
 	validateGithubToken,
 	validateGoogleToken,
 } from "api/middleware/token-validation.js";
+import { isStoredImageUrl } from "api/lib/stored-image-url.js";
 import { PendingLocationsCreateService } from "api/services/pending-locations/create.js";
 import { PendingLocationsRetrieveService } from "api/services/pending-locations/retrieve.js";
 import { PendingLocationsDeleteService } from "api/services/pending-locations/delete.js";
@@ -27,7 +28,18 @@ export class PendingLocationsController {
 	}
 
 	async createPendingLocation(req: Request, res: Response) {
-		const { name, type, address, contact, coords, provider } = req.body;
+		const { name, type, address, contact, coords, provider, image_url } =
+			req.body;
+
+		if (
+			image_url !== undefined &&
+			image_url !== null &&
+			!isStoredImageUrl(image_url)
+		) {
+			return res.status(400).json({
+				message: "Error: image_url must come from POST /uploads.",
+			});
+		}
 
 		if (
 			!req.headers.authorization ||
@@ -55,6 +67,7 @@ export class PendingLocationsController {
 						address,
 						contact,
 						coords,
+						isStoredImageUrl(image_url) ? image_url : undefined,
 					);
 				res.status(200).json({
 					message: response.message,

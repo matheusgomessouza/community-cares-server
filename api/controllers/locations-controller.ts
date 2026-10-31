@@ -2,6 +2,7 @@ import * as jose from "jose";
 import { Request, Response } from "express";
 import { LocationsRetrieveService } from "api/services/locations/retrieve.js";
 import { LocationsCreateService } from "api/services/locations/create.js";
+import { isStoredImageUrl } from "api/lib/stored-image-url.js";
 import { LocationsUpdateService } from "api/services/locations/update.js";
 
 export class LocationsController {
@@ -21,7 +22,18 @@ export class LocationsController {
 	}
 
 	async createLocation(req: Request, res: Response) {
-		const { id, name, type, address, contact, coords } = req.body;
+		const { id, name, type, address, contact, coords, image_url } =
+			req.body;
+
+		if (
+			image_url !== undefined &&
+			image_url !== null &&
+			!isStoredImageUrl(image_url)
+		) {
+			return res.status(400).json({
+				message: "Error: image_url must come from POST /uploads.",
+			});
+		}
 
 		if (
 			!req.headers.authorization ||
@@ -47,6 +59,7 @@ export class LocationsController {
 				address,
 				contact,
 				coords,
+				isStoredImageUrl(image_url) ? image_url : undefined,
 			);
 			res.status(201).json({
 				message: response.message,

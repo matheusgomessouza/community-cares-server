@@ -15,23 +15,25 @@ datasource db {
 }
 
 model Locations {
-  id      Int    @id @default(autoincrement())
-  name    String
-  type    String
-  address String
-  contact String
-  coords  Json
+  id        Int    @id @default(autoincrement())
+  name      String
+  type      String
+  address   String
+  contact   String
+  coords    Json
+  image_url String?
 
   @@unique([name, address, coords])
 }
 
 model PendingLocations {
-  id      Int    @id @default(autoincrement())
-  name    String
-  type    String
-  address String
-  contact String
-  coords  Json
+  id        Int    @id @default(autoincrement())
+  name      String
+  type      String
+  address   String
+  contact   String
+  coords    Json
+  image_url String?
 
   @@unique([name, address, coords])
 }

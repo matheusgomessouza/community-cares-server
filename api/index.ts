@@ -10,6 +10,7 @@ import adminUsersRouter from "api/routes/admin-users.js";
 import locationsRouter from "api/routes/locations.js";
 import pendingLocationsRouter from "api/routes/pending-locations.js";
 import authRouter from "api/routes/auth.js";
+import uploadsRouter from "api/routes/uploads.js";
 import { envs } from "env.js";
 
 /**
@@ -40,6 +41,9 @@ import { envs } from "env.js";
  *           type: string
  *         coords:
  *           $ref: '#/components/schemas/Coordinates'
+ *         image_url:
+ *           type: string
+ *           nullable: true
  *     PendingLocation:
  *       allOf:
  *         - $ref: '#/components/schemas/Location'
@@ -90,6 +94,10 @@ import { envs } from "env.js";
  *           type: string
  *           description: Token provider used for validation.
  *           enum: [github, google]
+ *         image_url:
+ *           type: string
+ *           nullable: true
+ *           description: Public URL returned by POST /uploads.
  *     ApproveLocationInput:
  *       type: object
  *       required: [id, name, type, address, contact, coords]
@@ -107,6 +115,10 @@ import { envs } from "env.js";
  *           type: string
  *         coords:
  *           $ref: '#/components/schemas/Coordinates'
+ *         image_url:
+ *           type: string
+ *           nullable: true
+ *           description: Public URL from the pending location.
  *     UpdateLocationFieldInput:
  *       type: object
  *       required: [field]
@@ -150,6 +162,7 @@ app.use("/users", usersRouter);
 app.use("/admin-users", adminUsersRouter);
 app.use("/locations", locationsRouter);
 app.use("/pending-locations", pendingLocationsRouter);
+app.use("/uploads", uploadsRouter);
 
 /**
  * @swagger

@@ -13,6 +13,8 @@ const SECRET_NAMES = [
 	"GITHUB_CLIENT_SECRET",
 	"GITHUB_CLIENT_SECRET_WEB_PRD",
 	"GOOGLE_SECRET",
+	"AWS_ACCESS_KEY_ID",
+	"AWS_SECRET_ACCESS_KEY",
 ] as const;
 
 function buildAuth(): GoogleAuth {

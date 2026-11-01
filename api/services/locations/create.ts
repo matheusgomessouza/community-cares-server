@@ -9,6 +9,7 @@ export class LocationsCreateService {
 		address: string,
 		contact: string,
 		coords: { latitude: number; longitude: number },
+		image_url?: string,
 	) {
 		try {
 			const locationsRepository = new LocationsRepository();
@@ -19,6 +20,7 @@ export class LocationsCreateService {
 				address,
 				contact,
 				coords,
+				image_url,
 			);
 
 			await pendingLocationsRepository.deletePendingLocationById(

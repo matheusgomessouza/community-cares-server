@@ -4,6 +4,8 @@ import {
 	validateGithubToken,
 	validateGoogleToken,
 } from "api/middleware/token-validation.js";
+import { isStoredImageUrl } from "api/lib/stored-image-url.js";
+import { getBearerToken, hasValidSession } from "api/lib/session.js";
 import { PendingLocationsCreateService } from "api/services/pending-locations/create.js";
 import { PendingLocationsRetrieveService } from "api/services/pending-locations/retrieve.js";
 import { PendingLocationsDeleteService } from "api/services/pending-locations/delete.js";
@@ -27,49 +29,59 @@ export class PendingLocationsController {
 	}
 
 	async createPendingLocation(req: Request, res: Response) {
-		const { name, type, address, contact, coords, provider } = req.body;
+		const { name, type, address, contact, coords, provider, image_url } =
+			req.body;
 
 		if (
-			!req.headers.authorization ||
-			!req.headers.authorization.startsWith("Bearer ")
+			image_url !== undefined &&
+			image_url !== null &&
+			!isStoredImageUrl(image_url)
 		) {
+			return res.status(400).json({
+				message: "Error: image_url must come from POST /uploads.",
+			});
+		}
+
+		const access_token = getBearerToken(req);
+		const hasSession = access_token ? false : await hasValidSession(req);
+
+		if (!access_token && !hasSession) {
 			return res.status(401).json({ message: "Unauthorized" });
 		}
 
-		const access_token = req.headers.authorization.split(" ")[1];
+		if (access_token) {
+			const tokenValidity =
+				provider === "github"
+					? await validateGithubToken(access_token)
+					: await validateGoogleToken(access_token);
 
-		const tokenValidity =
-			provider === "github"
-				? await validateGithubToken(access_token)
-				: await validateGoogleToken(access_token);
-
-		if (tokenValidity === 200) {
-			try {
-				const pendingLocationsCreateService =
-					new PendingLocationsCreateService();
-
-				const response =
-					await pendingLocationsCreateService.createLocation(
-						name,
-						type,
-						address,
-						contact,
-						coords,
-					);
-				res.status(200).json({
-					message: response.message,
-					payload: response.payload,
-				});
-			} catch (error) {
-				res.status(500).json({
+			if (tokenValidity !== 200) {
+				return res.status(401).json({
 					message:
-						error instanceof Error ? error.message : String(error),
+						"Error: Could not create pending location. | Token expired",
 				});
 			}
-		} else {
-			res.status(401).json({
-				message:
-					"Error: Could not create pending location. | Token expired",
+		}
+
+		try {
+			const pendingLocationsCreateService =
+				new PendingLocationsCreateService();
+
+			const response = await pendingLocationsCreateService.createLocation(
+				name,
+				type,
+				address,
+				contact,
+				coords,
+				isStoredImageUrl(image_url) ? image_url : undefined,
+			);
+			res.status(200).json({
+				message: response.message,
+				payload: response.payload,
+			});
+		} catch (error) {
+			res.status(500).json({
+				message: error instanceof Error ? error.message : String(error),
 			});
 		}
 	}

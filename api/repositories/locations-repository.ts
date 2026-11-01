@@ -13,6 +13,7 @@ export class LocationsRepository {
 		address: string,
 		contact: string,
 		coords: { latitude: number; longitude: number },
+		image_url?: string,
 	) {
 		return await prisma.locations.create({
 			data: {
@@ -21,6 +22,7 @@ export class LocationsRepository {
 				address,
 				contact,
 				coords,
+				image_url,
 			},
 		});
 	}

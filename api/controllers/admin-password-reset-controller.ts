@@ -86,12 +86,9 @@ export class AdminPasswordResetController {
 					.json({ message: "Invalid or expired reset link." });
 			}
 
-			return res
-				.status(200)
-				.json({
-					message:
-						"Password updated. Sign in with your new password.",
-				});
+			return res.status(200).json({
+				message: "Password updated. Sign in with your new password.",
+			});
 		} catch (error) {
 			console.error("[password-reset] confirm failed", { error });
 

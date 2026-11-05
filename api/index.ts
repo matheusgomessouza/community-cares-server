@@ -68,6 +68,31 @@ import { envs } from "env.js";
  *           type: string
  *         password:
  *           type: string
+ *     PasswordResetRequestInput:
+ *       type: object
+ *       required: [email]
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *     PasswordResetConfirmInput:
+ *       type: object
+ *       required: [token, password]
+ *       properties:
+ *         token:
+ *           type: string
+ *         password:
+ *           type: string
+ *           minLength: 8
+ *           maxLength: 128
+ *     PasswordResetTokenValidation:
+ *       type: object
+ *       properties:
+ *         valid:
+ *           type: boolean
+ *         expiresAt:
+ *           type: string
+ *           format: date-time
  *     OAuthCodeInput:
  *       type: object
  *       required: [code]

@@ -55,6 +55,24 @@ Execução local / Local run:
 Testes / Tests:
 - Execute `npx vitest` ou `npm test` / Run `npx vitest` or `npm test`
 
+**🔐 Redefinição de senha / Password reset**
+
+Endpoints:
+- `POST /admin-users/password-reset/request` with `{ email }`
+- `GET /admin-users/password-reset/validate?token=...`
+- `POST /admin-users/password-reset/confirm` with `{ token, password }`
+
+Variáveis / Variables:
+- `ADMIN_FRONTEND_URL`: base URL of the admin frontend. The reset link uses it.
+- `PASSWORD_RESET_TOKEN_TTL_MINUTES`: token lifetime in minutes. Default is 30.
+
+Transporte de e-mail / Mail transport:
+- The mail transport interface lives in `api/lib/mailer.ts`.
+- In development, when no transport is configured, the reset link is written to the server console.
+- In production, the server throws when no transport is configured. Add the provider adapter before deploying.
+- The raw token is never stored. The database stores only its SHA-256 hash.
+- The token expires after the configured lifetime and can be used once.
+
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 **🐳 Execução com Docker / Run with Docker**

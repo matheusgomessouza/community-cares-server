@@ -13,4 +13,8 @@ router.get("/validate", async (req: Request, res: Response) => {
 	await adminPasswordResetController.validate(req, res);
 });
 
+router.post("/confirm", async (req: Request, res: Response) => {
+	await adminPasswordResetController.confirm(req, res);
+});
+
 export default router;

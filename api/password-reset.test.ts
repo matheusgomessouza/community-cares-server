@@ -267,7 +267,9 @@ describe("GET /admin-users/password-reset/validate", () => {
 	});
 
 	it("returns 400 for an expired, used, or unknown token", async () => {
-		hoisted.client.adminPasswordResetToken.findFirst.mockResolvedValue(null);
+		hoisted.client.adminPasswordResetToken.findFirst.mockResolvedValue(
+			null,
+		);
 
 		const response = await request(app).get(
 			"/admin-users/password-reset/validate?token=raw-token",
@@ -288,6 +290,102 @@ describe("GET /admin-users/password-reset/validate", () => {
 		expect(
 			hoisted.client.adminPasswordResetToken.findFirst,
 		).not.toHaveBeenCalled();
+	});
+});
+
+describe("POST /admin-users/password-reset/confirm", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		hoisted.argon2Hash.mockResolvedValue("new-argon2-hash");
+	});
+
+	it("updates the password and consumes the token", async () => {
+		hoisted.client.adminPasswordResetToken.findFirst.mockResolvedValue({
+			id: "token-1",
+			adminUserId: 7,
+		});
+		hoisted.tx.adminPasswordResetToken.findFirst.mockResolvedValue({
+			id: "token-1",
+			adminUserId: 7,
+		});
+		hoisted.tx.adminPasswordResetToken.updateMany
+			.mockResolvedValueOnce({ count: 1 })
+			.mockResolvedValueOnce({ count: 0 });
+
+		const response = await request(app)
+			.post("/admin-users/password-reset/confirm")
+			.send({ token: "raw-token", password: "new-password" });
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({
+			message: "Password updated. Sign in with your new password.",
+		});
+		expect(hoisted.argon2Hash).toHaveBeenCalledWith("new-password");
+		expect(hoisted.tx.adminUser.update).toHaveBeenCalledWith({
+			where: { id: 7 },
+			data: {
+				password: "new-argon2-hash",
+				passwordChangedAt: expect.any(Date),
+			},
+		});
+		expect(hoisted.tx.adminPasswordResetToken.findFirst).toHaveBeenCalledWith({
+			where: {
+				tokenHash: hashResetToken("raw-token"),
+				usedAt: null,
+				expiresAt: { gt: expect.any(Date) },
+			},
+		});
+	});
+
+	it("returns 400 for a reused or expired token without hashing", async () => {
+		hoisted.client.adminPasswordResetToken.findFirst.mockResolvedValue(null);
+
+		const response = await request(app)
+			.post("/admin-users/password-reset/confirm")
+			.send({ token: "raw-token", password: "new-password" });
+
+		expect(response.status).toBe(400);
+		expect(response.body).toEqual({
+			message: "Invalid or expired reset link.",
+		});
+		expect(hoisted.argon2Hash).not.toHaveBeenCalled();
+		expect(hoisted.tx.adminUser.update).not.toHaveBeenCalled();
+	});
+
+	it("returns 400 when another request consumes the token first", async () => {
+		hoisted.client.adminPasswordResetToken.findFirst.mockResolvedValue({
+			id: "token-1",
+			adminUserId: 7,
+		});
+		hoisted.tx.adminPasswordResetToken.findFirst.mockResolvedValue({
+			id: "token-1",
+			adminUserId: 7,
+		});
+		hoisted.tx.adminPasswordResetToken.updateMany.mockResolvedValueOnce({
+			count: 0,
+		});
+
+		const response = await request(app)
+			.post("/admin-users/password-reset/confirm")
+			.send({ token: "raw-token", password: "new-password" });
+
+		expect(response.status).toBe(400);
+		expect(hoisted.tx.adminUser.update).not.toHaveBeenCalled();
+	});
+
+	it("returns 400 for a short password without touching the database", async () => {
+		const response = await request(app)
+			.post("/admin-users/password-reset/confirm")
+			.send({ token: "raw-token", password: "short" });
+
+		expect(response.status).toBe(400);
+		expect(response.body).toEqual({
+			message: "Error: Password must have at least 8 characters.",
+		});
+		expect(
+			hoisted.client.adminPasswordResetToken.findFirst,
+		).not.toHaveBeenCalled();
+		expect(hoisted.argon2Hash).not.toHaveBeenCalled();
 	});
 });
 

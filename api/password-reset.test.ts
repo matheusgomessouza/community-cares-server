@@ -11,10 +11,7 @@ import {
 } from "vitest";
 
 import { generateResetToken, hashResetToken } from "api/lib/reset-token.js";
-import {
-	sendPasswordResetEmail,
-	setMailTransport,
-} from "api/lib/mailer.js";
+import { sendPasswordResetEmail, setMailTransport } from "api/lib/mailer.js";
 
 const hoisted = vi.hoisted(() => {
 	const tx = {
@@ -238,6 +235,62 @@ describe("AdminPasswordResetTokensRepository", () => {
 	});
 });
 
+describe("GET /admin-users/password-reset/validate", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("returns 200 for a valid token", async () => {
+		const expiresAt = new Date("2026-11-05T12:30:00.000Z");
+		hoisted.client.adminPasswordResetToken.findFirst.mockResolvedValue({
+			expiresAt,
+		});
+
+		const response = await request(app).get(
+			"/admin-users/password-reset/validate?token=raw-token",
+		);
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({
+			valid: true,
+			expiresAt: expiresAt.toISOString(),
+		});
+		expect(
+			hoisted.client.adminPasswordResetToken.findFirst,
+		).toHaveBeenCalledWith({
+			where: {
+				tokenHash: hashResetToken("raw-token"),
+				usedAt: null,
+				expiresAt: { gt: expect.any(Date) },
+			},
+		});
+	});
+
+	it("returns 400 for an expired, used, or unknown token", async () => {
+		hoisted.client.adminPasswordResetToken.findFirst.mockResolvedValue(null);
+
+		const response = await request(app).get(
+			"/admin-users/password-reset/validate?token=raw-token",
+		);
+
+		expect(response.status).toBe(400);
+		expect(response.body).toEqual({
+			message: "Invalid or expired reset link.",
+		});
+	});
+
+	it("returns 400 when the token is missing", async () => {
+		const response = await request(app).get(
+			"/admin-users/password-reset/validate",
+		);
+
+		expect(response.status).toBe(400);
+		expect(
+			hoisted.client.adminPasswordResetToken.findFirst,
+		).not.toHaveBeenCalled();
+	});
+});
+
 describe("POST /admin-users/password-reset/request", () => {
 	const genericMessage =
 		"If an account exists for this email, a reset link has been sent.";
@@ -285,7 +338,9 @@ describe("POST /admin-users/password-reset/request", () => {
 
 		const rawToken = mail.text.match(/token=([^\s]+)/)?.[1];
 		expect(rawToken).toBeTruthy();
-		expect(hoisted.client.adminPasswordResetToken.create).toHaveBeenCalledWith({
+		expect(
+			hoisted.client.adminPasswordResetToken.create,
+		).toHaveBeenCalledWith({
 			data: expect.objectContaining({
 				adminUserId: 1,
 				tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/),

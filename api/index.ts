@@ -7,6 +7,7 @@ import swaggerSpec from "../swagger.js";
 
 import usersRouter from "api/routes/users.js";
 import adminUsersRouter from "api/routes/admin-users.js";
+import adminPasswordResetRouter from "api/routes/admin-password-reset.js";
 import locationsRouter from "api/routes/locations.js";
 import pendingLocationsRouter from "api/routes/pending-locations.js";
 import authRouter from "api/routes/auth.js";
@@ -159,6 +160,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/auth", authRouter);
 app.use("/users", usersRouter);
+app.use("/admin-users/password-reset", adminPasswordResetRouter);
 app.use("/admin-users", adminUsersRouter);
 app.use("/locations", locationsRouter);
 app.use("/pending-locations", pendingLocationsRouter);

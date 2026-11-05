@@ -11,6 +11,18 @@ export class AdminUsersRepository {
 		});
 	}
 
+	async findManyByEmail(email: string, take = 2) {
+		return await prisma.adminUser.findMany({
+			where: {
+				email: {
+					equals: email,
+					mode: "insensitive",
+				},
+			},
+			take,
+		});
+	}
+
 	async createAdminUser(
 		username: string,
 		name: string,

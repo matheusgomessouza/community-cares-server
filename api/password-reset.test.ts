@@ -1,6 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { generateResetToken, hashResetToken } from "api/lib/reset-token.js";
+import {
+	sendPasswordResetEmail,
+	setMailTransport,
+} from "api/lib/mailer.js";
 
 const hoisted = vi.hoisted(() => {
 	const tx = {
@@ -38,6 +42,55 @@ vi.mock("@prisma/client", () => ({
 }));
 
 import { AdminPasswordResetTokensRepository } from "api/repositories/admin-password-reset-tokens-repository.js";
+
+describe("mailer", () => {
+	afterEach(() => {
+		setMailTransport(null);
+		vi.unstubAllEnvs();
+		vi.restoreAllMocks();
+	});
+
+	it("logs the reset link when no transport is configured in development", async () => {
+		vi.stubEnv("NODE_ENV", "development");
+		const info = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		await sendPasswordResetEmail(
+			"admin@example.com",
+			"http://localhost:3000/reset-password?token=abc",
+		);
+
+		expect(info).toHaveBeenCalledWith(
+			expect.stringContaining(
+				"http://localhost:3000/reset-password?token=abc",
+			),
+		);
+	});
+
+	it("throws when no transport is configured in production", async () => {
+		vi.stubEnv("NODE_ENV", "production");
+
+		await expect(
+			sendPasswordResetEmail(
+				"admin@example.com",
+				"http://localhost:3000/reset-password?token=abc",
+			),
+		).rejects.toThrow("No mail transport configured");
+	});
+
+	it("uses the configured transport", async () => {
+		const send = vi.fn().mockResolvedValue(undefined);
+		setMailTransport(send);
+
+		await sendPasswordResetEmail(
+			"admin@example.com",
+			"http://localhost:3000/reset-password?token=abc",
+		);
+
+		expect(send).toHaveBeenCalledWith(
+			expect.objectContaining({ to: "admin@example.com" }),
+		);
+	});
+});
 
 describe("reset token", () => {
 	it("generates a 256-bit token and stores only its SHA-256 hash", () => {

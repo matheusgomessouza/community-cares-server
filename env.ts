@@ -23,6 +23,13 @@ const baseSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string(),
   S3_BUCKET: z.string(),
   S3_PUBLIC_BASE_URL: z.url(),
+  ADMIN_FRONTEND_URL: z.url().default("http://localhost:3000"),
+  PASSWORD_RESET_TOKEN_TTL_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(5)
+    .max(120)
+    .default(30),
 });
 
 const envSchema = environment === 'production'

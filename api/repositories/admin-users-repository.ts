@@ -11,6 +11,12 @@ export class AdminUsersRepository {
 		});
 	}
 
+	async findById(id: number) {
+		return await prisma.adminUser.findUnique({
+			where: { id },
+		});
+	}
+
 	async findManyByEmail(email: string, take = 2) {
 		return await prisma.adminUser.findMany({
 			where: {

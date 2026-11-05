@@ -2,6 +2,8 @@ import argon2 from "argon2";
 
 import { hashResetToken } from "api/lib/reset-token.js";
 import { AdminPasswordResetTokensRepository } from "api/repositories/admin-password-reset-tokens-repository.js";
+import { AdminUsersRepository } from "api/repositories/admin-users-repository.js";
+import { RefreshTokensRepository } from "api/repositories/refresh-tokens-repository.js";
 
 export class ResetPasswordService {
 	async reset(rawToken: string, newPassword: string): Promise<boolean> {
@@ -19,6 +21,16 @@ export class ResetPasswordService {
 			now: new Date(),
 		});
 
-		return result !== null;
+		if (result === null) return false;
+
+		const user = await new AdminUsersRepository().findById(
+			result.adminUserId,
+		);
+
+		if (user) {
+			await new RefreshTokensRepository().revokeAllForUser(user.username);
+		}
+
+		return true;
 	}
 }

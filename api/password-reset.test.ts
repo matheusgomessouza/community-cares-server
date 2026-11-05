@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import request from "supertest";
 import {
 	afterEach,
@@ -12,6 +12,8 @@ import {
 
 import { generateResetToken, hashResetToken } from "api/lib/reset-token.js";
 import { sendPasswordResetEmail, setMailTransport } from "api/lib/mailer.js";
+import { createRateLimiter } from "api/lib/rate-limit.js";
+import { RefreshTokensRepository } from "api/repositories/refresh-tokens-repository.js";
 
 const hoisted = vi.hoisted(() => {
 	const tx = {
@@ -151,6 +153,23 @@ describe("mailer", () => {
 		expect(send).toHaveBeenCalledWith(
 			expect.objectContaining({ to: "admin@example.com" }),
 		);
+	});
+});
+
+describe("rate limiter", () => {
+	it("returns 429 after the configured limit", async () => {
+		const limitedApp = express();
+		limitedApp.post(
+			"/limited",
+			createRateLimiter({ windowMs: 60_000, limit: 2 }),
+			(_req, res) => {
+				res.sendStatus(200);
+			},
+		);
+
+		expect((await request(limitedApp).post("/limited")).status).toBe(200);
+		expect((await request(limitedApp).post("/limited")).status).toBe(200);
+		expect((await request(limitedApp).post("/limited")).status).toBe(429);
 	});
 });
 
@@ -299,10 +318,18 @@ describe("POST /admin-users/password-reset/confirm", () => {
 		hoisted.argon2Hash.mockResolvedValue("new-argon2-hash");
 	});
 
-	it("updates the password and consumes the token", async () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("updates the password, consumes the token, and revokes sessions", async () => {
 		hoisted.client.adminPasswordResetToken.findFirst.mockResolvedValue({
 			id: "token-1",
 			adminUserId: 7,
+		});
+		hoisted.client.adminUser.findUnique.mockResolvedValue({
+			id: 7,
+			username: "alice",
 		});
 		hoisted.tx.adminPasswordResetToken.findFirst.mockResolvedValue({
 			id: "token-1",
@@ -311,6 +338,9 @@ describe("POST /admin-users/password-reset/confirm", () => {
 		hoisted.tx.adminPasswordResetToken.updateMany
 			.mockResolvedValueOnce({ count: 1 })
 			.mockResolvedValueOnce({ count: 0 });
+		const revoke = vi
+			.spyOn(RefreshTokensRepository.prototype, "revokeAllForUser")
+			.mockResolvedValue(undefined);
 
 		const response = await request(app)
 			.post("/admin-users/password-reset/confirm")
@@ -321,6 +351,7 @@ describe("POST /admin-users/password-reset/confirm", () => {
 			message: "Password updated. Sign in with your new password.",
 		});
 		expect(hoisted.argon2Hash).toHaveBeenCalledWith("new-password");
+		expect(revoke).toHaveBeenCalledWith("alice");
 		expect(hoisted.tx.adminUser.update).toHaveBeenCalledWith({
 			where: { id: 7 },
 			data: {
@@ -328,7 +359,9 @@ describe("POST /admin-users/password-reset/confirm", () => {
 				passwordChangedAt: expect.any(Date),
 			},
 		});
-		expect(hoisted.tx.adminPasswordResetToken.findFirst).toHaveBeenCalledWith({
+		expect(
+			hoisted.tx.adminPasswordResetToken.findFirst,
+		).toHaveBeenCalledWith({
 			where: {
 				tokenHash: hashResetToken("raw-token"),
 				usedAt: null,
@@ -338,7 +371,9 @@ describe("POST /admin-users/password-reset/confirm", () => {
 	});
 
 	it("returns 400 for a reused or expired token without hashing", async () => {
-		hoisted.client.adminPasswordResetToken.findFirst.mockResolvedValue(null);
+		hoisted.client.adminPasswordResetToken.findFirst.mockResolvedValue(
+			null,
+		);
 
 		const response = await request(app)
 			.post("/admin-users/password-reset/confirm")

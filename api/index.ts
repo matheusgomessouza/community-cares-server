@@ -7,11 +7,14 @@ import swaggerSpec from "../swagger.js";
 
 import usersRouter from "api/routes/users.js";
 import adminUsersRouter from "api/routes/admin-users.js";
+import adminPasswordResetRouter from "api/routes/admin-password-reset.js";
 import locationsRouter from "api/routes/locations.js";
 import pendingLocationsRouter from "api/routes/pending-locations.js";
 import authRouter from "api/routes/auth.js";
 import uploadsRouter from "api/routes/uploads.js";
 import { envs } from "env.js";
+import { setMailTransport } from "api/lib/mailer.js";
+import { createNodemailerTransport } from "api/lib/nodemailer-transport.js";
 
 /**
  * @swagger
@@ -67,6 +70,31 @@ import { envs } from "env.js";
  *           type: string
  *         password:
  *           type: string
+ *     PasswordResetRequestInput:
+ *       type: object
+ *       required: [email]
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *     PasswordResetConfirmInput:
+ *       type: object
+ *       required: [token, password]
+ *       properties:
+ *         token:
+ *           type: string
+ *         password:
+ *           type: string
+ *           minLength: 8
+ *           maxLength: 128
+ *     PasswordResetTokenValidation:
+ *       type: object
+ *       properties:
+ *         valid:
+ *           type: boolean
+ *         expiresAt:
+ *           type: string
+ *           format: date-time
  *     OAuthCodeInput:
  *       type: object
  *       required: [code]
@@ -148,6 +176,16 @@ import { envs } from "env.js";
 export const app = express();
 const port = 8088;
 
+const mailTransport = createNodemailerTransport();
+
+if (!mailTransport && process.env.NODE_ENV === "production") {
+	throw new Error(
+		"No mail transport configured. Set SMTP_HOST to send password reset email.",
+	);
+}
+
+setMailTransport(mailTransport);
+
 app.use(bodyParser.json());
 app.use(
 	cors({
@@ -159,6 +197,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/auth", authRouter);
 app.use("/users", usersRouter);
+app.use("/admin-users/password-reset", adminPasswordResetRouter);
 app.use("/admin-users", adminUsersRouter);
 app.use("/locations", locationsRouter);
 app.use("/pending-locations", pendingLocationsRouter);

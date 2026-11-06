@@ -11,11 +11,12 @@ export class AdminUsersCreateService {
 		try {
 			const adminUsersRepository = new AdminUsersRepository();
 			const hashedPassword = await argon2.hash(password);
+			const normalizedEmail = email.trim().toLowerCase();
 
 			const user = await adminUsersRepository.createAdminUser(
 				username,
 				name,
-				email,
+				normalizedEmail,
 				hashedPassword,
 			);
 

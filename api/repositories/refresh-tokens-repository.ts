@@ -25,4 +25,12 @@ export class RefreshTokensRepository {
 		if (item.expiresAt && Date.now() > item.expiresAt) return true;
 		return false;
 	}
+
+	async revokeAllForUser(userId: string) {
+		for (const [key, item] of store) {
+			if (item.userId === userId) {
+				store.set(key, { ...item, revoked: true });
+			}
+		}
+	}
 }

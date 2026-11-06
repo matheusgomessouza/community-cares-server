@@ -13,6 +13,8 @@ import pendingLocationsRouter from "api/routes/pending-locations.js";
 import authRouter from "api/routes/auth.js";
 import uploadsRouter from "api/routes/uploads.js";
 import { envs } from "env.js";
+import { setMailTransport } from "api/lib/mailer.js";
+import { createNodemailerTransport } from "api/lib/nodemailer-transport.js";
 
 /**
  * @swagger
@@ -173,6 +175,16 @@ import { envs } from "env.js";
  */
 export const app = express();
 const port = 8088;
+
+const mailTransport = createNodemailerTransport();
+
+if (!mailTransport && process.env.NODE_ENV === "production") {
+	throw new Error(
+		"No mail transport configured. Set SMTP_HOST to send password reset email.",
+	);
+}
+
+setMailTransport(mailTransport);
 
 app.use(bodyParser.json());
 app.use(

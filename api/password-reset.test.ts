@@ -59,6 +59,7 @@ const hoisted = vi.hoisted(() => {
 		client,
 		argon2Verify: vi.fn(),
 		argon2Hash: vi.fn(),
+		createTransport: vi.fn(),
 	};
 });
 
@@ -97,7 +98,14 @@ vi.mock("argon2", () => ({
 	},
 }));
 
+vi.mock("nodemailer", () => ({
+	default: {
+		createTransport: hoisted.createTransport,
+	},
+}));
+
 import { AdminPasswordResetTokensRepository } from "api/repositories/admin-password-reset-tokens-repository.js";
+import { createNodemailerTransport } from "api/lib/nodemailer-transport.js";
 
 let app: Express;
 
@@ -153,6 +161,85 @@ describe("mailer", () => {
 		expect(send).toHaveBeenCalledWith(
 			expect.objectContaining({ to: "admin@example.com" }),
 		);
+	});
+});
+
+describe("nodemailer transport", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		hoisted.createTransport.mockReturnValue({
+			sendMail: vi.fn().mockResolvedValue({ messageId: "test" }),
+		});
+	});
+
+	it("returns null when no SMTP setting is present", () => {
+		expect(createNodemailerTransport({})).toBeNull();
+		expect(hoisted.createTransport).not.toHaveBeenCalled();
+	});
+
+	it("rejects a partial configuration", () => {
+		expect(() =>
+			createNodemailerTransport({ host: "smtp.example.com" }),
+		).toThrow("SMTP_FROM is required");
+		expect(() => createNodemailerTransport({ user: "user" })).toThrow(
+			"SMTP_HOST is required",
+		);
+		expect(() =>
+			createNodemailerTransport({
+				host: "smtp.example.com",
+				from: "no-reply@example.com",
+				user: "user",
+			}),
+		).toThrow("SMTP_USER and SMTP_PASS must be set together");
+	});
+
+	it("sends the mail through SMTP with STARTTLS on port 587", async () => {
+		const sendMail = vi.fn().mockResolvedValue({ messageId: "test" });
+		hoisted.createTransport.mockReturnValue({ sendMail });
+
+		const transport = createNodemailerTransport({
+			host: "smtp.example.com",
+			port: 587,
+			user: "user",
+			pass: "pass",
+			from: "no-reply@example.com",
+		});
+
+		await transport?.({
+			to: "admin@example.com",
+			subject: "Subject",
+			text: "Text",
+			html: "<p>Text</p>",
+		});
+
+		expect(hoisted.createTransport).toHaveBeenCalledWith({
+			host: "smtp.example.com",
+			port: 587,
+			secure: false,
+			auth: { user: "user", pass: "pass" },
+		});
+		expect(sendMail).toHaveBeenCalledWith({
+			from: "no-reply@example.com",
+			to: "admin@example.com",
+			subject: "Subject",
+			text: "Text",
+			html: "<p>Text</p>",
+		});
+	});
+
+	it("uses implicit TLS on port 465 and no auth when credentials are absent", () => {
+		createNodemailerTransport({
+			host: "smtp.example.com",
+			port: 465,
+			from: "no-reply@example.com",
+		});
+
+		expect(hoisted.createTransport).toHaveBeenCalledWith({
+			host: "smtp.example.com",
+			port: 465,
+			secure: true,
+			auth: undefined,
+		});
 	});
 });
 

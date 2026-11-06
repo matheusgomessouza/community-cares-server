@@ -67,9 +67,10 @@ Variáveis / Variables:
 - `PASSWORD_RESET_TOKEN_TTL_MINUTES`: token lifetime in minutes. Default is 30.
 
 Transporte de e-mail / Mail transport:
-- The mail transport interface lives in `api/lib/mailer.ts`.
-- In development, when no transport is configured, the reset link is written to the server console.
-- In production, the server throws when no transport is configured. Add the provider adapter before deploying.
+- The SMTP transport is Nodemailer and it lives in `api/lib/nodemailer-transport.ts`.
+- Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM` to send real email.
+- `SMTP_PORT` defaults to `587`. `SMTP_SECURE` defaults to `true` only when the port is `465`.
+- Without `SMTP_HOST`, development writes the reset link to the server console. Production refuses to start without `SMTP_HOST` and `SMTP_FROM`.
 - The raw token is never stored. The database stores only its SHA-256 hash.
 - The token expires after the configured lifetime and can be used once.
 

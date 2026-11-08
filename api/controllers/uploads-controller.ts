@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { logger } from "api/lib/logger.js";
 import { detectImageType } from "api/lib/image.js";
 import { getBearerToken, hasValidSession } from "api/lib/session.js";
 import {
@@ -67,10 +68,7 @@ export class UploadsController {
 
 			return res.status(201).json({ url });
 		} catch (error) {
-			console.error(
-				"Unable to upload the image to S3",
-				error instanceof Error ? error.message : "unknown error",
-			);
+			logger.error({ err: error }, "Unable to upload the image to S3");
 			return res.status(500).json({
 				message: "Error: could not upload the image.",
 			});

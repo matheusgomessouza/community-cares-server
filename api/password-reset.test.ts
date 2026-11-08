@@ -12,6 +12,7 @@ import {
 
 import { generateResetToken, hashResetToken } from "api/lib/reset-token.js";
 import { sendPasswordResetEmail, setMailTransport } from "api/lib/mailer.js";
+import { logger } from "api/lib/logger.js";
 import { createRateLimiter } from "api/lib/rate-limit.js";
 import { RefreshTokensRepository } from "api/repositories/refresh-tokens-repository.js";
 
@@ -124,7 +125,7 @@ describe("mailer", () => {
 
 	it("logs the reset link when no transport is configured in development", async () => {
 		vi.stubEnv("NODE_ENV", "development");
-		const info = vi.spyOn(console, "info").mockImplementation(() => {});
+		const info = vi.spyOn(logger, "info").mockImplementation(() => {});
 
 		await sendPasswordResetEmail(
 			"admin@example.com",
@@ -132,9 +133,12 @@ describe("mailer", () => {
 		);
 
 		expect(info).toHaveBeenCalledWith(
-			expect.stringContaining(
-				"http://localhost:3000/reset-password?token=abc",
-			),
+			expect.objectContaining({
+				resetUrl: expect.stringContaining(
+					"http://localhost:3000/reset-password?token=abc",
+				),
+			}),
+			expect.any(String),
 		);
 	});
 
@@ -596,7 +600,7 @@ describe("POST /admin-users/password-reset/request", () => {
 		]);
 		const send = vi.fn().mockResolvedValue(undefined);
 		setMailTransport(send);
-		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const warn = vi.spyOn(logger, "warn").mockImplementation(() => {});
 
 		const response = await request(app)
 			.post("/admin-users/password-reset/request")
@@ -624,7 +628,7 @@ describe("POST /admin-users/password-reset/request", () => {
 			{ id: 1, email: "admin@example.com" },
 		]);
 		setMailTransport(vi.fn().mockRejectedValue(new Error("smtp down")));
-		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		const error = vi.spyOn(logger, "error").mockImplementation(() => {});
 
 		const response = await request(app)
 			.post("/admin-users/password-reset/request")

@@ -1,6 +1,7 @@
 import argon2 from "argon2";
 import * as jose from "jose";
 import { AdminUsersRepository } from "api/repositories/admin-users-repository.js";
+import { logger } from "api/lib/logger.js";
 
 export class AdminUsersAuthenticateService {
 	async authenticate(username: string, password: string) {
@@ -37,7 +38,7 @@ export class AdminUsersAuthenticateService {
 				message: "Error: Invalid username or password.",
 			};
 		} catch (error) {
-			console.error("Authentication error:", error);
+			logger.error({ err: error }, "Authentication error");
 			return {
 				payload: undefined,
 				message:

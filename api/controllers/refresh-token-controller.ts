@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { logger } from "api/lib/logger.js";
 import {
 	verifyRefreshToken,
 	createAccessToken,
@@ -131,7 +132,7 @@ export class RefreshTokenController {
 
 			return res.status(200).json(user);
 		} catch (err) {
-			console.error("RefreshTokenController.me error", err);
+			logger.error({ err }, "RefreshTokenController.me error");
 			return res.status(500).json({ message: "Server error" });
 		}
 	}

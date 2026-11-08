@@ -1,6 +1,7 @@
 import fetch from "node-fetch";
 import { OAuth2Client } from "google-auth-library";
 import { envs } from "env.js";
+import { logger } from "api/lib/logger.js";
 
 export async function validateGithubToken(token: string) {
 	// Determine which credentials to use based on environment
@@ -42,7 +43,7 @@ export async function validateGithubToken(token: string) {
 		);
 		return response.status;
 	} catch (error) {
-		console.error("Token expired /validateGithubToken", error);
+		logger.error({ err: error }, "Token expired /validateGithubToken");
 	}
 }
 
@@ -62,9 +63,9 @@ export async function validateGoogleToken(token: string) {
 			return expiredToken;
 		}
 	} catch (error) {
-		console.error(
+		logger.error(
+			{ err: error },
 			"Unable to perform token validation /validateGoogleToken",
-			error,
 		);
 	}
 }

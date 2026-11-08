@@ -1,5 +1,6 @@
 import { OAuth2Client } from "google-auth-library";
 import { envs } from "env.js";
+import { logger } from "api/lib/logger.js";
 
 export async function exchangeCodeGoogle(code: string) {
 	const client = new OAuth2Client(
@@ -14,6 +15,9 @@ export async function exchangeCodeGoogle(code: string) {
 
 		return tokens;
 	} catch (error) {
-		console.error("Error on the HTTP request /exchangeCodeGoogle", error);
+		logger.error(
+			{ err: error },
+			"Error on the HTTP request /exchangeCodeGoogle",
+		);
 	}
 }

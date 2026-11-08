@@ -1,6 +1,7 @@
 import { exchangeCodeGithub } from "api/lib/github.js";
 import { exchangeCodeGoogle } from "api/lib/google.js";
 import { Request, Response } from "express";
+import { logger } from "api/lib/logger.js";
 import {
 	createAccessToken,
 	createRefreshToken,
@@ -57,21 +58,27 @@ export class UsersController {
 		try {
 			userJson = JSON.parse(userText) as GitHubUserResponse;
 		} catch (err) {
-			console.error("Failed to parse GitHub /user response as JSON", {
-				status: userRes.status,
-				statusText: userRes.statusText,
-				body: userText,
-				err,
-			});
+			logger.error(
+				{
+					err,
+					status: userRes.status,
+					statusText: userRes.statusText,
+					body: userText,
+				},
+				"Failed to parse GitHub /user response as JSON",
+			);
 			throw new Error("Failed to parse GitHub user profile");
 		}
 
 		if (!userRes.ok) {
-			console.error("GitHub /user returned non-OK", {
-				status: userRes.status,
-				statusText: userRes.statusText,
-				body: userJson,
-			});
+			logger.error(
+				{
+					status: userRes.status,
+					statusText: userRes.statusText,
+					body: userJson,
+				},
+				"GitHub /user returned non-OK",
+			);
 			throw new Error("Failed to fetch GitHub user profile");
 		}
 
@@ -90,12 +97,15 @@ export class UsersController {
 			try {
 				emailsJson = JSON.parse(emailsText) as GitHubEmailResponse[];
 			} catch (err) {
-				console.warn("Failed to parse GitHub /user/emails response", {
-					status: emailsRes.status,
-					statusText: emailsRes.statusText,
-					body: emailsText,
-					err,
-				});
+				logger.warn(
+					{
+						err,
+						status: emailsRes.status,
+						statusText: emailsRes.statusText,
+						body: emailsText,
+					},
+					"Failed to parse GitHub /user/emails response",
+				);
 				emailsJson = null;
 			}
 
@@ -104,13 +114,13 @@ export class UsersController {
 					emailsJson.find((e) => e.primary) || emailsJson[0];
 				email = primary?.email ?? undefined;
 			} else {
-				console.warn(
-					"Could not fetch GitHub emails or no emails available",
+				logger.warn(
 					{
 						status: emailsRes.status,
 						statusText: emailsRes.statusText,
 						body: emailsJson,
 					},
+					"Could not fetch GitHub emails or no emails available",
 				);
 			}
 		}
@@ -137,7 +147,7 @@ export class UsersController {
 				env,
 			)) as OAuthTokenResponse | null;
 			if (!response) {
-				console.error("exchangeCodeGithub returned null/undefined");
+				logger.error("exchangeCodeGithub returned null/undefined");
 				return res
 					.status(500)
 					.json({ message: "Failed to exchange code with GitHub" });
@@ -145,9 +155,9 @@ export class UsersController {
 
 			const providerAccessToken = response.access_token;
 			if (!providerAccessToken) {
-				console.error(
-					"No access_token returned by exchangeCodeGithub",
+				logger.error(
 					{ response },
+					"No access_token returned by exchangeCodeGithub",
 				);
 				return res.status(500).json({
 					message: "Failed to retrieve GitHub access token",
@@ -158,7 +168,7 @@ export class UsersController {
 			try {
 				profile = await this.fetchGithubProfile(providerAccessToken);
 			} catch (err) {
-				console.error("Error fetching GitHub profile:", err);
+				logger.error({ err }, "Error fetching GitHub profile");
 				return res
 					.status(500)
 					.json({ message: "Failed to fetch GitHub profile" });
@@ -195,7 +205,7 @@ export class UsersController {
 		} catch (error: unknown) {
 			// The message can carry the upstream response and the client id.
 			// Keep it in the log and return a fixed message to the caller.
-			console.error("Error exchanging code for token:", error);
+			logger.error({ err: error }, "Error exchanging code for token");
 			return res.status(500).json({
 				message: "Failed to exchange the GitHub code",
 			});
@@ -220,21 +230,27 @@ export class UsersController {
 			try {
 				json = JSON.parse(text) as GooglePeopleResponse;
 			} catch (err) {
-				console.error("Failed to parse Google People API response", {
-					status: res.status,
-					statusText: res.statusText,
-					body: text,
-					err,
-				});
+				logger.error(
+					{
+						err,
+						status: res.status,
+						statusText: res.statusText,
+						body: text,
+					},
+					"Failed to parse Google People API response",
+				);
 				throw new Error("Failed to parse Google profile");
 			}
 
 			if (!res.ok) {
-				console.error("Google People API returned non-OK", {
-					status: res.status,
-					statusText: res.statusText,
-					body: json,
-				});
+				logger.error(
+					{
+						status: res.status,
+						statusText: res.statusText,
+						body: json,
+					},
+					"Google People API returned non-OK",
+				);
 				throw new Error("Failed to fetch Google profile");
 			}
 
@@ -260,7 +276,7 @@ export class UsersController {
 					email: payload.email,
 				};
 			} catch (err) {
-				console.error("Failed to decode Google id_token", err);
+				logger.error({ err }, "Failed to decode Google id_token");
 				throw new Error("Failed to decode Google id_token");
 			}
 		}
@@ -280,7 +296,7 @@ export class UsersController {
 				code,
 			)) as OAuthTokenResponse | null;
 			if (!response) {
-				console.error("exchangeCodeGoogle returned null/undefined");
+				logger.error("exchangeCodeGoogle returned null/undefined");
 				return res
 					.status(500)
 					.json({ message: "Failed to exchange code with Google" });
@@ -296,7 +312,7 @@ export class UsersController {
 					id_token: idToken,
 				});
 			} catch (err) {
-				console.error("Error fetching Google profile:", err);
+				logger.error({ err }, "Error fetching Google profile");
 				return res
 					.status(500)
 					.json({ message: "Failed to fetch Google profile" });
@@ -334,7 +350,7 @@ export class UsersController {
 				});
 			}
 		} catch (error) {
-			console.error("Error exchanging code for token:", error);
+			logger.error({ err: error }, "Error exchanging code for token");
 			return res.status(500).json({
 				message: error instanceof Error ? error.message : String(error),
 			});

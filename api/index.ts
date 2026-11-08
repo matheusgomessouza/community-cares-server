@@ -1,9 +1,12 @@
 import "dotenv/config";
+import crypto from "node:crypto";
 import cors from "cors";
 import express from "express";
 import bodyParser from "body-parser";
+import pinoHttp from "pino-http";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "../swagger.js";
+import { logger } from "api/lib/logger.js";
 
 import usersRouter from "api/routes/users.js";
 import adminUsersRouter from "api/routes/admin-users.js";
@@ -186,6 +189,24 @@ if (!mailTransport && process.env.NODE_ENV === "production") {
 
 setMailTransport(mailTransport);
 
+app.use(
+	pinoHttp({
+		logger,
+		genReqId: (req) =>
+			(req.headers["x-request-id"] as string) || crypto.randomUUID(),
+		customLogLevel: (_req, res, err) => {
+			if (res.statusCode >= 500 || err) return "error";
+			if (res.statusCode >= 400) return "warn";
+			return "info";
+		},
+		autoLogging: {
+			ignore: (req) =>
+				req.url === "/" ||
+				(req.url ? req.url.startsWith("/api-docs") : false),
+		},
+	}),
+);
+
 app.use(bodyParser.json());
 app.use(
 	cors({
@@ -225,6 +246,6 @@ app.get("/", (req, res) => {
 
 if (process.env.NODE_ENV !== "test") {
 	app.listen(port, "0.0.0.0", () => {
-		console.log(`Server is running on port:`, port);
+		logger.info({ port }, `Server is running on port ${port}`);
 	});
 }

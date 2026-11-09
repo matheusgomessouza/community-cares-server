@@ -522,7 +522,7 @@ describe("DELETE /pending-location/:id", () => {
 		expect(res.status).toBe(500);
 		expect(loggerErrorSpy).toHaveBeenCalledWith(
 			{ err: expect.any(Error) },
-			"Error exchanging code for token",
+			"Error on trying deleting a pending location | JWT verification failed or delete error",
 		);
 	});
 });

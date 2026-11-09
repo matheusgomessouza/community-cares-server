@@ -21,6 +21,9 @@ export const loggerOptions: LoggerOptions = {
 			"password",
 			"token",
 			"refreshToken",
+			"access_token",
+			"refresh_token",
+			"id_token",
 			"*.password",
 			"*.token",
 			"*.refreshToken",
@@ -31,8 +34,9 @@ export const loggerOptions: LoggerOptions = {
 };
 
 /**
- * Create the logger. The level is resolved lazily so that env.ts (which loads
- * .env.local) runs before the level is read from process.env.
+ * Create the logger. The level is read at import time. The import order in
+ * api/index.ts runs env.ts (which loads the .env file) before this module, so
+ * process.env is already populated when the level is read.
  */
 export function createLogger(): pino.Logger {
 	return pino({

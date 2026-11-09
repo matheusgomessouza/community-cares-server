@@ -134,11 +134,10 @@ describe("mailer", () => {
 
 		expect(info).toHaveBeenCalledWith(
 			expect.objectContaining({
-				resetUrl: expect.stringContaining(
-					"http://localhost:3000/reset-password?token=abc",
-				),
+				resetUrl:
+					"http://localhost:3000/reset-password?token=[REDACTED]",
 			}),
-			expect.any(String),
+			"[password-reset] dev link generated",
 		);
 	});
 

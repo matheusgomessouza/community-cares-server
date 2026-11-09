@@ -56,5 +56,8 @@ export async function sendPasswordResetEmail(
 		throw new Error("No mail transport configured");
 	}
 
-	logger.info({ to, resetUrl }, "[password-reset] dev link generated");
+	logger.info(
+		{ to, resetUrl: resetUrl.replace(/\?.*$/, "?token=[REDACTED]") },
+		"[password-reset] dev link generated",
+	);
 }

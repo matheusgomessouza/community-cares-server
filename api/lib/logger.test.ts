@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import pino from "pino";
-import { logger } from "./logger.js";
+import { logger, loggerOptions } from "./logger.js";
 
 describe("logger", () => {
 	it("exports a configured pino logger instance", () => {
@@ -17,32 +17,11 @@ describe("logger", () => {
 
 	it("redacts sensitive fields like passwords and tokens", () => {
 		let loggedData = "";
-		const testLogger = pino(
-			{
-				formatters: {
-					level: (label: string) => ({ level: label }),
-				},
-				redact: {
-					paths: [
-						"req.headers.authorization",
-						"req.headers.cookie",
-						"password",
-						"token",
-						"refreshToken",
-						"*.password",
-						"*.token",
-						"*.refreshToken",
-						"*.secret",
-					],
-					censor: "[REDACTED]",
-				},
+		const testLogger = pino(loggerOptions, {
+			write: (str: string) => {
+				loggedData += str;
 			},
-			{
-				write: (str: string) => {
-					loggedData += str;
-				},
-			},
-		);
+		});
 
 		testLogger.info({
 			password: "supersecretpassword",

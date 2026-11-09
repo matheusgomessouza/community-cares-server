@@ -6,6 +6,7 @@ import bodyParser from "body-parser";
 import pinoHttp from "pino-http";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "../swagger.js";
+import { envs } from "env.js";
 import { logger } from "api/lib/logger.js";
 
 import usersRouter from "api/routes/users.js";
@@ -15,7 +16,6 @@ import locationsRouter from "api/routes/locations.js";
 import pendingLocationsRouter from "api/routes/pending-locations.js";
 import authRouter from "api/routes/auth.js";
 import uploadsRouter from "api/routes/uploads.js";
-import { envs } from "env.js";
 import { setMailTransport } from "api/lib/mailer.js";
 import { createNodemailerTransport } from "api/lib/nodemailer-transport.js";
 

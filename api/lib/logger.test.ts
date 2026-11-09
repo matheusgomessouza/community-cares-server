@@ -1,0 +1,49 @@
+import { describe, it, expect } from "vitest";
+import pino from "pino";
+import { logger, loggerOptions } from "./logger.js";
+
+describe("logger", () => {
+	it("exports a configured pino logger instance", () => {
+		expect(logger).toBeDefined();
+		expect(typeof logger.info).toBe("function");
+		expect(typeof logger.error).toBe("function");
+		expect(typeof logger.warn).toBe("function");
+		expect(typeof logger.debug).toBe("function");
+	});
+
+	it("uses silent log level in test environment by default", () => {
+		expect(logger.level).toBe("silent");
+	});
+
+	it("redacts sensitive fields like passwords and tokens", () => {
+		let loggedData = "";
+		const testLogger = pino(loggerOptions, {
+			write: (str: string) => {
+				loggedData += str;
+			},
+		});
+
+		testLogger.info({
+			password: "supersecretpassword",
+			user: { token: "secret-token", email: "user@example.com" },
+		});
+
+		const parsed = JSON.parse(loggedData);
+		expect(parsed.level).toBe("info");
+		expect(parsed.password).toBe("[REDACTED]");
+		expect(parsed.user.token).toBe("[REDACTED]");
+		expect(parsed.user.email).toBe("user@example.com");
+
+		loggedData = "";
+		testLogger.info({
+			response: {
+				refresh_token: "secret-refresh",
+				id_token: "secret-id",
+			},
+		});
+
+		const nested = JSON.parse(loggedData);
+		expect(nested.response.refresh_token).toBe("[REDACTED]");
+		expect(nested.response.id_token).toBe("[REDACTED]");
+	});
+});

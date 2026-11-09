@@ -1,4 +1,5 @@
 import { envs } from "env.js";
+import { logger } from "api/lib/logger.js";
 
 import { sendPasswordResetEmail } from "api/lib/mailer.js";
 import { generateResetToken } from "api/lib/reset-token.js";
@@ -25,8 +26,9 @@ export class RequestPasswordResetService {
 		);
 
 		if (users.length > 1) {
-			console.warn(
-				`[password-reset] duplicate email, request ignored: ${maskEmail(normalizedEmail)}`,
+			logger.warn(
+				{ email: maskEmail(normalizedEmail) },
+				"[password-reset] duplicate email, request ignored",
 			);
 			return;
 		}
@@ -55,10 +57,13 @@ export class RequestPasswordResetService {
 		try {
 			await sendPasswordResetEmail(user.email, resetUrl, ttlMinutes);
 		} catch (error) {
-			console.error("[password-reset] unable to send email", {
-				email: maskEmail(user.email),
-				error,
-			});
+			logger.error(
+				{
+					err: error,
+					email: maskEmail(user.email),
+				},
+				"[password-reset] unable to send email",
+			);
 		}
 	}
 }

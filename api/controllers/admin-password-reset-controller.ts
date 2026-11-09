@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 
+import { logger } from "api/lib/logger.js";
 import { RequestPasswordResetService } from "api/services/admin-users/request-password-reset.js";
 import { ResetPasswordService } from "api/services/admin-users/reset-password.js";
 import { ValidatePasswordResetTokenService } from "api/services/admin-users/validate-password-reset-token.js";
@@ -30,7 +31,7 @@ export class AdminPasswordResetController {
 		try {
 			await new RequestPasswordResetService().request(parsed.data.email);
 		} catch (error) {
-			console.error("[password-reset] request failed", { error });
+			logger.error({ err: error }, "[password-reset] request failed");
 		}
 
 		return res.status(202).json({ message: GENERIC_MESSAGE });
@@ -57,7 +58,7 @@ export class AdminPasswordResetController {
 				expiresAt: result.expiresAt.toISOString(),
 			});
 		} catch (error) {
-			console.error("[password-reset] validation failed", { error });
+			logger.error({ err: error }, "[password-reset] validation failed");
 
 			return res
 				.status(400)
@@ -90,7 +91,7 @@ export class AdminPasswordResetController {
 				message: "Password updated. Sign in with your new password.",
 			});
 		} catch (error) {
-			console.error("[password-reset] confirm failed", { error });
+			logger.error({ err: error }, "[password-reset] confirm failed");
 
 			return res
 				.status(400)

@@ -1,5 +1,6 @@
 import fetch from "node-fetch";
 import { envs } from "env.js";
+import { logger } from "api/lib/logger.js";
 
 type EnvsWithOptionalProps = typeof envs & {
 	GITHUB_CLIENT_ID_WEB_PRD?: string;
@@ -75,7 +76,7 @@ export async function exchangeCodeGithub(
 		);
 
 		const responseBody = await response.json().catch((e) => {
-			console.error("Failed to parse response as JSON:", e);
+			logger.error({ err: e }, "Failed to parse response as JSON");
 			return null;
 		});
 
@@ -90,7 +91,7 @@ export async function exchangeCodeGithub(
 			);
 		}
 	} catch (error) {
-		console.error("Error on the HTTP request /exchangeCode", error);
+		logger.error({ err: error }, "Error on the HTTP request /exchangeCode");
 		throw error;
 	}
 }

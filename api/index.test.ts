@@ -2,6 +2,7 @@ import request from "supertest";
 import * as jose from "jose";
 import type { JWTPayload } from "jose";
 import type { Express } from "express";
+import { logger } from "api/lib/logger.js";
 import {
 	expect,
 	describe,
@@ -191,9 +192,7 @@ let exchangeCodeGoogle: (code: string) => Promise<
 	  }
 	| undefined
 >;
-let consoleErrorSpy: MockInstance<
-	(message?: unknown, ...optionalParams: unknown[]) => void
->;
+let loggerErrorSpy: MockInstance;
 let argon2: {
 	verify: ReturnType<typeof vi.fn>;
 };
@@ -225,11 +224,11 @@ beforeAll(async () => {
 beforeEach(() => {
 	vi.clearAllMocks();
 	process.env.AUTH_SECRET_KEY = "test-secret";
-	consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+	loggerErrorSpy = vi.spyOn(logger, "error").mockImplementation(() => {});
 });
 
 afterEach(() => {
-	consoleErrorSpy.mockRestore();
+	loggerErrorSpy.mockRestore();
 });
 
 describe("Health Check", () => {
@@ -422,7 +421,10 @@ describe("POST /authenticate-google", () => {
 			.send({ code: "bad-code" });
 
 		expect(res.status).toBe(500);
-		expect(consoleErrorSpy).toHaveBeenCalled();
+		expect(loggerErrorSpy).toHaveBeenCalledWith(
+			{ err: expect.any(Error) },
+			"Error exchanging code for token",
+		);
 	});
 });
 
@@ -486,7 +488,10 @@ describe("DELETE /pending-location/:id", () => {
 			.set("Authorization", "Bearer expired-token");
 
 		expect(res.status).toBe(500);
-		expect(consoleErrorSpy).toHaveBeenCalled();
+		expect(loggerErrorSpy).toHaveBeenCalledWith(
+			{ err: expect.any(Error) },
+			"Error on trying deleting a pending location | JWT is expired",
+		);
 	});
 
 	it("returns 500 when JWT verification fails with other error", async () => {
@@ -497,6 +502,10 @@ describe("DELETE /pending-location/:id", () => {
 			.set("Authorization", "Bearer bad-token");
 
 		expect(res.status).toBe(500);
+		expect(loggerErrorSpy).toHaveBeenCalledWith(
+			{ err: expect.any(Error) },
+			"Error on trying deleting a pending location | JWT verification failed or delete error",
+		);
 	});
 
 	it.skip("returns 500 when delete throws", async () => {
@@ -511,7 +520,10 @@ describe("DELETE /pending-location/:id", () => {
 			.set("Authorization", "Bearer valid-token");
 
 		expect(res.status).toBe(500);
-		expect(consoleErrorSpy).toHaveBeenCalled();
+		expect(loggerErrorSpy).toHaveBeenCalledWith(
+			{ err: expect.any(Error) },
+			"Error on trying deleting a pending location | JWT verification failed or delete error",
+		);
 	});
 });
 

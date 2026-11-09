@@ -1,3 +1,5 @@
+import { logger } from "api/lib/logger.js";
+
 export type PasswordResetMail = {
 	to: string;
 	subject: string;
@@ -54,5 +56,8 @@ export async function sendPasswordResetEmail(
 		throw new Error("No mail transport configured");
 	}
 
-	console.info(`[password-reset] ${to}: ${resetUrl}`);
+	logger.info(
+		{ to, resetUrl: resetUrl.replace(/\?.*$/, "?token=[REDACTED]") },
+		"[password-reset] dev link generated",
+	);
 }

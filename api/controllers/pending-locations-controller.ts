@@ -1,5 +1,6 @@
 import * as jose from "jose";
 import { Request, Response } from "express";
+import { logger } from "api/lib/logger.js";
 import {
 	validateGithubToken,
 	validateGoogleToken,
@@ -116,17 +117,17 @@ export class PendingLocationsController {
 			});
 		} catch (error) {
 			if (error instanceof jose.errors.JWTExpired) {
-				console.error(
+				logger.error(
+					{ err: error },
 					"Error on trying deleting a pending location | JWT is expired",
-					error,
 				);
 				res.status(500).json({
 					message: error.message || String(error),
 				});
 			} else {
-				console.error(
-					"Error on trying deleting a pending location | JWT verification failed or delete error:",
-					error,
+				logger.error(
+					{ err: error },
+					"Error on trying deleting a pending location | JWT verification failed or delete error",
 				);
 				return res.status(500).json({
 					message:

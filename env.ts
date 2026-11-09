@@ -24,6 +24,9 @@ const baseSchema = z.object({
   S3_BUCKET: z.string(),
   S3_PUBLIC_BASE_URL: z.url(),
   ADMIN_FRONTEND_URL: z.url().default("http://localhost:3000"),
+  LOG_LEVEL: z
+    .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
+    .optional(),
   PASSWORD_RESET_TOKEN_TTL_MINUTES: z.coerce
     .number()
     .int()

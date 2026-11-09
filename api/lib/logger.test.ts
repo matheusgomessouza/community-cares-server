@@ -33,5 +33,17 @@ describe("logger", () => {
 		expect(parsed.password).toBe("[REDACTED]");
 		expect(parsed.user.token).toBe("[REDACTED]");
 		expect(parsed.user.email).toBe("user@example.com");
+
+		loggedData = "";
+		testLogger.info({
+			response: {
+				refresh_token: "secret-refresh",
+				id_token: "secret-id",
+			},
+		});
+
+		const nested = JSON.parse(loggedData);
+		expect(nested.response.refresh_token).toBe("[REDACTED]");
+		expect(nested.response.id_token).toBe("[REDACTED]");
 	});
 });
